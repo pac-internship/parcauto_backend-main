@@ -35,7 +35,7 @@ Route::group(['prefix' => 'user'], function () {
     Route::post('load-by-email', [App\Http\Controllers\UserController::class, 'loadUserByEmail'])->name('user.load-user-by-email');
 });
 
-Route::group(['middleware' => 'apiAuth'], function () {
+Route::group(['middleware' => 'auth:api'], function () {  //Cela garantit que toutes tes routes protégées utilisent le système Passport.
 
 
 
