@@ -2,146 +2,206 @@
 
 namespace App\Http\Controllers;
 
-use Exception;
 use App\Models\User;
-
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Exception;
 
 class UserController extends Controller
 {
-    public function getAllUser(){
-        try{
-            $user = User::with('categorieUser')
-            ->with('direction')
-            ->with('role')
-            ->whereIn('statut',[true])
-            ->orderBy('created_at')
-            ->get();
+    /**
+     * 1. Récupération de tous les utilisateurs actifs avec relations
+     */
+    public function getAllUser()
+    {
+        try {
+            $users = User::with( ['categorieUser', 'direction', 'role'])
+                ->where('statut', 1)
+                ->orderByDesc('created_at')
+                ->get();
 
             return response()->json([
-                'data' => $user,
+                'data' => $users,
                 'message' => '',
                 'status' => 200
-            ],200);
-        }catch(Exception $ex){
-            Log::error($ex->getMessage());
+            ]);
+        } catch (Exception $ex) {
+            Log::error('Erreur getAllUser : ' . $ex->getMessage());
 
             return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue.',
                 'status' => 500
             ]);
         }
     }
 
-    public function getUserById($userId){
-        try{
-            $data =  User::where('id', $userId)->first();
-
-            return response()->json([
-                'data' => $data,
-                'success' => "success",
-                'status' => 200
-            ], 200);
-
-        }catch(Exception $ex){
-            Log::error($ex->getMessage());
-
-            return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
-                'status'  => 500
-            ], 500);
-        }
-    }
-
-    public function updateUser(Request $request){
-        try{
-
-            $nom = $request->input('nom');
-            $prenom = $request->input('prenom');
-            $email = $request->input('email');
-            $user_id = $request->input('user_id');
-
-            $user = User::where('id',$user_id)->first();
-            $user->nom = $nom;
-            $user->prenom = $prenom;
-            $user->email = $email;
-            $user->save();
-            DB::commit();
-
-            return response()->json([
-                'data' => '',
-                'message' => 'Utilisateur modifié avec succès',
-                'status' => 200
-            ],200);
-        }catch(Exception $ex){
-            Log::error($ex->getMessage());
-
-            return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
-                'status' => 500
-            ]);
-        }
-    }
-
-    public function deleteUser(Request $request){
-        try{
-            $user_id = $request[0];
-
-            $user = User::where('id',$user_id)->first();
-
-            $user->statut = false;
-            $user->save();
-            DB::commit();
-
-            return response()->json([
-                'data' => '',
-                'message' => 'Utilisateur désactivé avec succès',
-                'status' => 200
-            ],200);
-
-        }catch(Exception $ex){
-            Log::error($ex->getMessage());
-
-            return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
-                'status' => 500
-            ]);
-        }
-    }
-
-    public function loadUserByEmail(Request $request){
+    /**
+     * 2. Récupération d’un utilisateur par son identifiant
+     */
+    public function getUserById($userId)
+    {
         try {
-            $email = $request->input('email');
-            $user = User::query()
-                ->with('role','demandeVehicule','direction','categorieUser')
-                ->where('email', '=', $email)->first();
-            if($user == null) {
+            $user = User::with(['categorieUser', 'direction', 'role'])->find($userId);
+
+            if (!$user) {
                 return response()->json([
-                    'error' => "error",
-                    'message' => "Utilisateur introuvable.",
+                    'error' => 'not_found',
+                    'message' => 'Utilisateur non trouvé.',
                     'status' => 404
-                ], 404);
+                ]);
             }
+
             return response()->json([
                 'data' => $user,
-                'success' => "success",
-                'message' => "",
                 'status' => 200
-            ], 200);
+            ]);
         } catch (Exception $ex) {
-            Log::error($ex->getMessage());
+            Log::error('Erreur getUserById : ' . $ex->getMessage());
+
             return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue.',
                 'status' => 500
-            ], 500);
+            ]);
+        }
+    }
+
+    /**
+     * 3. Mise à jour des informations d’un utilisateur
+     */
+    public function updateUser(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'nom' => 'required|string',
+            'prenom' => 'required|string',
+            'email' => 'required|email'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'validation_error',
+                'message' => $validator->errors(),
+                'status' => 422
+            ]);
+        }
+
+        DB::beginTransaction();
+        try {
+            $user = User::find($request->input('user_id'));
+
+            $user->update([
+                'nom' => $request->input('nom'),
+                'prenom' => $request->input('prenom'),
+                'email' => $request->input('email')
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Utilisateur modifié avec succès',
+                'status' => 200
+            ]);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::error('Erreur updateUser : ' . $ex->getMessage());
+
+            return response()->json([
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue.',
+                'status' => 500
+            ]);
+        }
+    }
+
+    /**
+     * 4. Suppression logique (désactivation) d’un utilisateur
+     */
+    public function deleteUser(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'validation_error',
+                'message' => $validator->errors(),
+                'status' => 422
+            ]);
+        }
+
+        DB::beginTransaction();
+        try {
+            $user = User::find($request->input('user_id'));
+
+            $user->update([
+                'statut' => false
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Utilisateur désactivé avec succès',
+                'status' => 200
+            ]);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::error('Erreur deleteUser : ' . $ex->getMessage());
+
+            return response()->json([
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue.',
+                'status' => 500
+            ]);
+        }
+    }
+
+    /**
+     * 5. Récupération d’un utilisateur par son email
+     */
+    public function loadUserByEmail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'validation_error',
+                'message' => $validator->errors(),
+                'status' => 422
+            ]);
+        }
+
+        try {
+            $user = User::with(['role', 'demandeVehicule', 'direction', 'categorieUser'])
+                ->where('email', $request->input('email'))
+                ->first();
+
+            if (!$user) {
+                return response()->json([
+                    'error' => 'not_found',
+                    'message' => 'Utilisateur introuvable.',
+                    'status' => 404
+                ]);
+            }
+
+            return response()->json([
+                'data' => $user,
+                'status' => 200
+            ]);
+        } catch (Exception $ex) {
+            Log::error('Erreur loadUserByEmail : ' . $ex->getMessage());
+
+            return response()->json([
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue.',
+                'status' => 500
+            ]);
         }
     }
 }

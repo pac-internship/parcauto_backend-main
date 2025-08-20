@@ -14,21 +14,27 @@ class CreateUsersTable extends Migration
     public function up()
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->increments('id');
+            $table->id(); // Remplace increments() par id() (bigIncrements par défaut)
             $table->string('nom');
             $table->string('prenom');
             $table->string('email')->unique();
             $table->string('tel');
             $table->string('statut');
             $table->string('password');
-            $table->unsignedInteger('role_id');
-            $table->unsignedInteger('categorie_user_id');
-            $table->unsignedInteger('direction_id');
+
+            $table->unsignedBigInteger('role_id');
+            $table->unsignedBigInteger('categorie_user_id');
+
+            // Ajout de la colonne entite_id pour la relation avec la table entites
+            $table->unsignedBigInteger('entite_id')->nullable();
+
+            $table->rememberToken();
             $table->timestamps();
 
-            $table->foreign('role_id')->on('roles')->references('id');
-            $table->foreign('categorie_user_id')->on('categorie_users')->references('id');
-            $table->foreign('direction_id')->on('directions')->references('id');
+            // Clés étrangères
+            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+            $table->foreign('categorie_user_id')->references('id')->on('categorie_users')->onDelete('cascade');
+            $table->foreign('entite_id')->references('id')->on('entites')->onDelete('set null');
         });
     }
 
