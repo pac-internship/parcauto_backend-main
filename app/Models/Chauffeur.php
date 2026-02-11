@@ -9,6 +9,14 @@ class Chauffeur extends Model
 {
     use HasFactory;
 
+    // Constante pour les valeurs possibles de la colonne 'disponibilite' en tenant compte de la bd
+    public const DISPONIBILITES = [
+        'DISPONIBLE',
+        'INDISPONIBLE',
+        'REPOS',
+        'COURS',
+    ];
+
     protected $fillable = [
         'matricule',
         'num_permis',
@@ -21,32 +29,32 @@ class Chauffeur extends Model
         'categorie_permis_id',
         'user_id',
         'created_by',
-        'created_at',
         'updated_by',
-        'updated_at',
     ];
-    public function user(){
-        return $this->hasOne(User::class, 'id', 'user_id', 'id');
+
+    // Relations
+
+    public function user() {
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    public function permis(){
+    public function permis() {
         return $this->belongsTo(CategoriePermis::class, 'categorie_permis_id', 'id');
     }
 
-    public function planningGardes(){
-        return $this->belongsToMany(Chauffeur::class, 'programmation', 'chauffeur_id', 'planning_garde_id');
+    public function planningGardes() {
+        return $this->belongsToMany(PlanningGarde::class, 'programmation', 'chauffeur_id', 'planning_garde_id');
     }
 
     public function affectations() {
-        return $this->hasMany(AffectationDemande::class, "chauffeur_id", "id");
+        return $this->hasMany(AffectationDemande::class, 'chauffeur_id', 'id');
     }
 
-    public function last_affectation() {
-        return $this->hasOne(AffectationDemande::class, "chauffeur_id", "id")->latest();
+    public function last_affectation() {  // Récupère la dernière affectation liée au chauffeur
+        return $this->hasOne(AffectationDemande::class, 'chauffeur_id')->latestOfMany();
     }
 
     public function occupations() {
-        return $this->hasMany(Occupation::class, "chauffeur_id", "id");
+        return $this->hasMany(Occupation::class, 'chauffeur_id', 'id');
     }
-
 }

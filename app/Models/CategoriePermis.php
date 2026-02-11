@@ -14,11 +14,13 @@ class CategoriePermis extends Model
         'statut',
     ];
 
-    public function vehicules(){
-        return $this->belongsToMany(Vehicule::class, 'conduite_demandes', 'vehicule_id', 'categorie_permis_id');
+    //  Relation vers les chauffeurs ayant ce permis (des chauffeurs peuvent avoir la meme categorie de permis)
+    public function chauffeurs() {
+        return $this->hasMany(Chauffeur::class, 'categorie_permis_id', 'id');
     }
 
-    public function chauffeur(){
-        return $this->belongsTo(Chauffeur::class, 'categorie_permis_id', 'id');
+    //  Option : si chaque véhicule est lié à un permis (à confirmer)
+    public function vehicules(){
+        return $this->hasMany(Vehicule::class, 'categorie_permis_id', 'id');
     }
 }

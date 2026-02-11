@@ -14,8 +14,6 @@ class User extends Authenticatable
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
      */
     protected $fillable = [
         'nom',
@@ -25,14 +23,12 @@ class User extends Authenticatable
         'statut',
         'role_id',
         'categorie_user_id',
-        'direction_id',
-        'password'
+        'entite_id', // Clé étrangère vers la table entites
+        'password',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -41,31 +37,37 @@ class User extends Authenticatable
 
     /**
      * The attributes that should be cast.
-     *
-     * @var array<string, string>
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
 
+    /**
+     * Validation rules (optionnelles selon ton usage)
+     */
     public static $rules = [
-        'email' => 'required',
-        'password' => 'required'
+        'email' => 'required|email',
+        'password' => 'required|min:6',
     ];
 
-    public function direction(){
-        return $this->belongsTo(Direction::class,'direction_id', 'id');
+    //  Lien vers l'entité (service, département, etc.)
+    public function entite()
+    {
+        return $this->belongsTo(Entite::class, 'entite_id');
     }
 
-    public function role(){
-        return $this->belongsTo(Role::class,'role_id', 'id');
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
-    public function categorieUser(){
-        return $this->belongsTo(CategorieUser::class, 'categorie_user_id', 'id');
+    public function categorieUser()
+    {
+        return $this->belongsTo(CategorieUser::class, 'categorie_user_id');
     }
 
-    public function demandeVehicule(){
-        return $this->hasMany(DemandeVehicule::class, 'user_id', 'id');
+    public function demandeVehicules()
+    {
+        return $this->hasMany(DemandeVehicule::class, 'user_id');
     }
 }
