@@ -47,9 +47,8 @@ class ChauffeurController extends Controller
         try {
             $chauffeurUserIds = Chauffeur::where('statut', true)->pluck('user_id')->toArray();
 
-            $data = User::where('statut', true)
-                ->whereNotIn('id', $chauffeurUserIds)
-                ->get();
+            $data = User::with(['role'])
+                        ->where('statut', true)->whereNotIn('id', $chauffeurUserIds)->get();
 
             return response()->json([
                 'data' => $data,

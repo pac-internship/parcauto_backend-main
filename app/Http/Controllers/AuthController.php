@@ -13,7 +13,6 @@ class AuthController extends Controller
 {
 
     public function login(Request $request){
-
         try{
             $validator = Validator::make($request->all(), [
                 'email' => 'email|required',
@@ -31,21 +30,21 @@ class AuthController extends Controller
                 return response([ "status"=> "erreur", 'message' => 'Paramètres invalides']);
             }
             // si le user est actif
-            if(auth()->user() != null ) {
-                $accessToken = auth()->user()->createToken('authToken')->accessToken;
-                return response(['user' => auth()->user(), 'access_token' => $accessToken, "status"=> "success",]);
-            } 
 
+            if(auth()->user() != null ) {
+                $user = auth()->user(); $user->load('role');
+                $accessToken = auth()->user()->createToken('authToken')->accessToken;
+                return response(['user' => $user, 'access_token' => $accessToken, "status"=> "success",]);
+            } 
         }catch(Exception $ex){
             Log::error($ex->getMessage());
             return response()->json([
                 'error'=>"error",
-                'message'=>"Une erreur interne est survenue OKKK.",
+                'message'=>"Une erreur interne est survenue.",
                 'statut'=>500
             ],500);
         }
-
-    }//end login 
+    }
 
     
 }
