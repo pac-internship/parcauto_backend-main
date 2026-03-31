@@ -50,7 +50,8 @@ class VehiculeController extends Controller
 
     public function saveVehicule(Request $request){
         try{
-            $input = $request->input('body');
+            $input = $request->all();
+            $input['statut'] = 1; // valeur par défaut
 
             if(!isset($input['id'])){//Création
                 try{
@@ -99,7 +100,7 @@ class VehiculeController extends Controller
     //Types véhicules methodes
     public function getTypesVehicules(){
         try{
-            $data = TypeVehicule::where('statut', true)->get();
+            $data = TypeVehicule::where('statut', "ACTIF")->get();
             return response()->json([
                 'data' => $data,
                 'success' => 'success',

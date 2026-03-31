@@ -75,24 +75,70 @@ class NoteController extends Controller
         }
 
     }
-    public function getNoteByIdDemande($demande_id){
-        try{
-            $notation=Notation::get()->where('demande_vehicule_id',$demande_id)->first();
-            $ligneNotations = LigneNotation::where('notation_id',$notation->id)->get();
+    public function getNoteByIdDemande($demande_id)
+{
+    try {
+
+        $notation = Notation::where('demande_vehicule_id',$demande_id)->first();
+
+        if(!$notation){
             return response()->json([
-                'data'=>[
-                    $notation,$ligneNotations
-                ],
-                'message'=>'note récupérer avec succès',
+                'data'=>[],
+                'message'=>'Aucune notation trouvée',
                 'status'=>200
             ],200);
-        }catch(Exception $ex){
-            Log::error($ex->getMessage());
-
-            return response()->json([
-                'error' => 'error',
-                'message' => 'Une erreur interne est suvenue'
-            ], 500);
         }
+
+        $ligneNotations = LigneNotation::where('notation_id',$notation->id)->get();
+
+        return response()->json([
+            'data'=>[
+                $notation,$ligneNotations
+            ],
+            'message'=>'note récupérée avec succès',
+            'status'=>200
+        ],200);
+
+    } catch(Exception $ex){
+
+        Log::error($ex->getMessage());
+
+        return response()->json([
+            'error'=>'error',
+            'message'=>'Une erreur interne est survenue'
+        ],500);
     }
+}
+
+    public function verifierNotation($demande_id)
+{
+    try {
+
+        $notation = Notation::where('demande_vehicule_id', $demande_id)->first();
+
+        if ($notation) {
+            return response()->json([
+                'data' => true,
+                'message' => 'Notation déjà effectuée',
+                'status' => 200
+            ], 200);
+        }
+
+        return response()->json([
+            'data' => false,
+            'message' => 'Aucune notation trouvée',
+            'status' => 200
+        ], 200);
+
+    } catch (Exception $ex) {
+
+        Log::error($ex->getMessage());
+
+        return response()->json([
+            'error' => 'error',
+            'message' => 'Une erreur interne est survenue'
+        ], 500);
+
+    }
+}
 }

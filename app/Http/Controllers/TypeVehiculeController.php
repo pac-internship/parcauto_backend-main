@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Motif;
-use Exception;
+use App\Models\TypeVehicule;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
-class MotifController extends Controller
+class TypeVehiculeController extends Controller
 {
     public function index(){
         try{
-            $data = Motif::all();
+            $data = TypeVehicule::all();
 
             return response()->json([
                 'data' => $data,
@@ -30,3 +28,4 @@ class MotifController extends Controller
         }
     }
 }
+

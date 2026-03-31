@@ -30,8 +30,8 @@ class DemandeVehiculeRequest extends FormRequest
             'nbre_personnes' => 'required',
             'escales' => '',
             'user_id' => 'required',
-            'motif' => 'required',
-            'type_vehicule' => 'required',
+            'motif_id' => 'required',
+            'type_vehicule_id' => 'required',
             'date_depart' => 'required',
             'heure_depart' => 'required',
         ];

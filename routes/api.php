@@ -16,6 +16,8 @@ use App\Http\Controllers\JournalSmsController;
 use App\Http\Controllers\API\StatistiqueController;
 use App\Http\Controllers\API\PasswordResetController;
 use App\Http\Controllers\API\EntiteController;
+use App\Http\Controllers\TypeVehiculeController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -25,7 +27,7 @@ use App\Http\Controllers\API\EntiteController;
 | Here is where you can register API routes for your application.
 |
 */
-
+//Route::get('/parc/typevehicule', [TypeVehiculeController::class, 'index']);
 /**
  * Authentification
  */
@@ -102,7 +104,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('filtrer-en-cours', [DemandeCourseController::class, 'getDemandeCourseEnCourFiltrer']);
     });
 
-    /**
+  /**
      * Affectations
      */
     Route::prefix('affectation')->group(function () {
@@ -111,7 +113,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('save', [DemandeCourseController::class, 'affecterDemande']);
         Route::post('update', [DemandeCourseController::class, 'updateAffectation']);
     });
-
+    
     /**
      * Notations
      */
@@ -150,6 +152,26 @@ Route::middleware('auth:api')->group(function () {
         Route::get('list', [JournalSmsController::class, 'getAllSMS']);
         Route::post('search', [JournalSmsController::class, 'searchSMS']);
     });
+
+   Route::prefix('parc')->group(function () {
+
+    // utilisateurs
+    Route::get('getAllUser', [UserController::class, 'getAllUser']);
+
+    // motifs
+    Route::get('motif', [MotifController::class, 'index']);
+
+    // typevehicule
+    Route::get('typevehicule', [TypeVehiculeController::class, 'index']);
+
+    // demandes de courses
+    Route::get('list/demande-courses/{user_id}/{role}', [DemandeCourseController::class, 'listDemandeVehicule']);
+    Route::get('list/demande-courses-en-cour/{user_id}/{role}', [DemandeCourseController::class, 'getDemandeCourseEnCour']);
+
+    // vérification notation
+    Route::get('verifierNotation/{demande_id}', [NoteController::class, 'verifierNotation']);
+
+});
 
     /**
      * Statistiques

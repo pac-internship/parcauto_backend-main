@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
+use App\Models\DemandeVehicule;
 
 class User extends Authenticatable
 {
@@ -56,6 +57,12 @@ class User extends Authenticatable
         return $this->belongsTo(Entite::class, 'entite_id');
     }
 
+    // Exemple : un utilisateur appartient à une direction
+    public function direction()
+    {
+        return $this->belongsTo(Direction::class, 'direction_id');
+    }
+
     public function role()
     {
         return $this->belongsTo(Role::class, 'role_id');
@@ -69,5 +76,16 @@ class User extends Authenticatable
     public function demandeVehicules()
     {
         return $this->hasMany(DemandeVehicule::class, 'user_id');
+    }
+
+    // Si tu veux aussi les demandes dont il est bénéficiaire
+    public function demandesBeneficiaire()
+    {
+        return $this->hasMany(DemandeVehicule::class, 'beneficiaire_id');
+    }
+
+    public function demandeVehicule()
+    {
+        return $this->hasMany(DemandeVehicule::class);
     }
 }

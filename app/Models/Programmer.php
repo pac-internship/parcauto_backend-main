@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Programmer extends Model
 {
 
-    protected $table = "programmers";
+    protected $table = "programmation";
 
     use HasFactory;
     protected $fillable = [

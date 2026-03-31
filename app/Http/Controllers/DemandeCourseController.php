@@ -38,8 +38,8 @@ class DemandeCourseController extends Controller
             $beneficiaire_id = $request->input('beneficiaire_id');
             $point_depart = $request->input('point_depart');
             $point_destination = $request->input('point_destination');
-            $type_vehicule = $request->input('type_vehicule');
-            $motif = $request->input('motif');
+            $type_vehicule_id = $request->input('type_vehicule_id');
+            $motif_id = $request->input('motif_id');
             $nbre_personnes = $request->input('nbre_personnes');
             $escales = $request->input('escales');
             $objet = $request->input('objet');
@@ -48,25 +48,26 @@ class DemandeCourseController extends Controller
             $heure_depart = $request->input('heure_depart');
             $heure_retour = $request->input('heure_retour');
             $date = Carbon::now();
+            Log::debug($request->all());
             $demande = DemandeVehicule::create([
                 'point_depart' => $point_depart,
                 'point_destination' => $point_destination,
-                'type_vehicule_id' => $type_vehicule,
-                'motif_id' => $motif,
+                'type_vehicule_id' => $type_vehicule_id,
+                'motif_id' => $motif_id,
                 'nbre_personnes' => $nbre_personnes,
                 'escales' => $escales,
                 'user_id' => $user_id,
                 'beneficiaire_id' => $beneficiaire_id,
                 'objet' => $objet,
-                'statut' => env('STATUT_DEMANDE_COURSE_CREEE'),
+                'statut' => 'CREEE',
                 'date_depart' => DateService::addTimeToDate($date_depart, $heure_depart),
                 'date_retour' => DateService::addTimeToDate($date_retour, $heure_retour),
                 'heure_depart' => $heure_depart,
                 'heure_retour' => $heure_retour,
-                'date'=>$date,
+                
             ])->id;
 
-            if($demande){
+            /*if($demande){
                 if(isset($user_id)){
                     $user = User::where('id',$user_id)->first();
                     $demande_new = DemandeVehicule::where('id',$demande)->with('beneficiaire')->first();
@@ -123,7 +124,7 @@ class DemandeCourseController extends Controller
 
                     }
                 }
-            }
+            }*/
             return response()->json([
                 'data' => '',
                 'message' => 'Demande de courses créée avec succès',
@@ -172,8 +173,8 @@ class DemandeCourseController extends Controller
                         'point_destination' => $request->input('point_destination'),
                         'nbre_personnes' => $request->input('nbre_personnes'),
                         'objet' => $request->input('objet'),
-                        'type_vehicule_id' => $request->input('type_vehicule'),
-                        'motif_id' => $request->input('motif'),
+                        'type_vehicule_id' => $request->input('type_vehicule_id'),
+                        'motif_id' => $request->input('motif_id'),
                         'beneficiaire_id' => $request->input('beneficiaire_id'),
                         'escales' => $request->input('escales'),
                         'date_depart' => DateService::addTimeToDate($request->input('date_depart'), $request->input('heure_depart')),
@@ -570,102 +571,51 @@ class DemandeCourseController extends Controller
         }
     }
 
-    public function affecterDemande(Request $request, $response=0){
-        try{
-            $demande_id = $request->input('demande_id');
-            $vehicule = $request->input('vehicule_id');
-            $chauffeur = $request->input('chauffeur_id');
+   public function affecterDemande(Request $request)
+{
+    try {
+        $demande_id = $request->input('demande_id');
+        $vehicule = $request->input('vehicule_id');
+        $chauffeur = $request->input('chauffeur_id');
 
-            $demande = DemandeVehicule::with('user','motif','beneficiaire')
-            ->where('id','=',$demande_id)->first();
+        $demande = DemandeVehicule::with('user','motif','beneficiaire')
+            ->where('id', $demande_id)
+            ->first();
 
-            if($demande->statut !=env('STATUT_DEMANDE_COURSE_CREEE'))
-            {
-                return response()->json( [
-                    'error'=>"error",
-                    'message' => "Ressource non autorisée",
-                    'status' => 401
-                ]);
-            }
-
-            // $chauffeurAffected = AffectationDemande::with('demandeCourse')
-            //     ->whereHas('demandeCourse', function($query){
-            //         $query->whereNotIn('statut',[env('STATUT_DEMANDE_COURSE_TERMINEE')]);
-            //     })
-            //     ->where('chauffeur_id', $chauffeur)
-            //     ->get();
-
-            // if($chauffeurAffected && $response != 1){
-            //     return response()->json([
-            //         'message' => "Ce chauffeur a ete deja affecte a une course voulez vous quand meme l'affecte ?",
-            //         'response' => 1
-            //     ]);
-            // }
-
-            $affectation = AffectationDemande::create([
-                'vehicule_id' => $vehicule,
-                'demande_vehicule_id' => $demande_id,
-                'chauffeur_id' => $chauffeur,
-            ]);
-
-            $demande->statut = env('STATUT_DEMANDE_COURSE_AFFECTEE');
-            $demande->save();
-            // save new occupation
-            OccupationService::saveOccupation($affectation, $demande->date_depart, $demande->date_retour);
-
-            $chauffeur_affecter = Chauffeur::with('user')
-            ->where('id',$chauffeur)->first();
-            $vehicule_affecter = Vehicule::with('type')
-            ->where('id',$vehicule)->first();
-            $mailable = new NotificationChauffeurMail($chauffeur_affecter,$demande,$vehicule_affecter);
-            Mail::to($demande->user->email)->send($mailable);
-            Log::debug($chauffeur_affecter);
-            //envoi de sms au demandeur de course
-            $message=''.env('MOOV_MESSAGE_HEADER')." ".$demande->beneficiaire->nom." ".$demande->beneficiaire->prenom." ".env('MOOV_MESSAGE_AFFECTATION_DEMANDEUR_DEBUT').$chauffeur_affecter->user->nom." ".$chauffeur_affecter->user->prenom." tel: ".$chauffeur_affecter->user->tel." ".env('MOOV_MESSAGE_AFFECTATION_DEMANDEUR_FIN').$vehicule_affecter->marque."-".$vehicule_affecter->immatr.'';
-            $jsonResponse = MoovApiService::sendSms($demande->beneficiaire->tel,$message,$demande->beneficiaire_id);
-
-            $journalSms = new JournalSms();
-            $journalSms->contact = $demande->beneficiaire->tel;
-            $journalSms->contenu = $message;
-            $journalSms->status_envoi = $jsonResponse;
-            $journalSms->date_envoi = Carbon::now();
-            $journalSms->user_id = $demande->beneficiaire_id;
-            $journalSms->save();
-
-            //envoi de sms au chauffeur
-            $date_format = Carbon::parse($demande->date_depart)->format('d/m/Y à H:i:s');
-            $message_debut=''.env('MOOV_MESSAGE_HEADER')." ".$chauffeur_affecter->user->nom." ".$chauffeur_affecter->user->prenom." ".env('MOOV_MESSAGE_AFFECTATION_CHAUFFEUR')."\n";
-            $demande_nom = "Demandeur de course: ".$demande->beneficiaire->nom." ".$demande->beneficiaire->prenom."\n";
-            $num_tel = "Téléphone: ".$demande->beneficiaire->tel."\n";
-            $vehicule_course = "Vehicule: ".$vehicule_affecter->marque."-".$vehicule_affecter->immatr."\n";
-            $point_depart_course = "Point de départ: ".$demande->point_depart."\n";
-            $date_heure_depart = "Date et heure de départ: ".$date_format;
-            $message_chauffeur = $message_debut.$demande_nom.$num_tel.$vehicule_course.$point_depart_course.$date_heure_depart;
-            $jsonResponse = MoovApiService::sendSms($chauffeur_affecter->user->tel,$message_chauffeur,$chauffeur_affecter->user_id);
-
-            $journalSms = new JournalSms();
-            $journalSms->contact = $chauffeur_affecter->user->tel;
-            $journalSms->contenu = $message;
-            $journalSms->status_envoi = $jsonResponse;
-            $journalSms->date_envoi = Carbon::now();
-            $journalSms->user_id = $demande->beneficiaire_id;
-            $journalSms->save();
-
+        if (!$demande) {
             return response()->json([
-                'message' => 'Affactation effectuée avec succès',
-                'success' => 'success',
-                'status' => 200
-            ],200);
-        }catch(Exception $ex){
-            Log::error($ex->getMessage());
-
-            return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
-                'status' => 500
-            ]);
+                'message' => 'Demande non trouvée'
+            ], 404);
         }
+
+        if ($demande->statut != env('STATUT_DEMANDE_COURSE_CREEE')) {
+            return response()->json([
+                'message' => 'Ressource non autorisée'
+            ], 401);
+        }
+
+        $affectation = AffectationDemande::create([
+            'vehicule_id' => $vehicule,
+            'demande_vehicule_id' => $demande_id,
+            'chauffeur_id' => $chauffeur,
+        ]);
+
+        $demande->statut = env('STATUT_DEMANDE_COURSE_AFFECTEE');
+        $demande->save();
+
+        return response()->json([
+            'message' => 'Affectation effectuée avec succès'
+        ], 200);
+
+    } catch (\Exception $ex) {
+
+        Log::error("ERREUR AFFECTATION: " . $ex->getMessage());
+
+        return response()->json([
+            'message' => $ex->getMessage()
+        ], 500);
     }
+}
 
     public function getDemandeAffecte(){
         try {
