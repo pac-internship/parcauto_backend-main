@@ -113,7 +113,8 @@ class HistoriqueController extends Controller
     public function getHistoriquesDemandes(Request $request){
         try{
 
-            $input = $request->input('body');
+           // $input = $request->input('body');
+            $input = $request->all();
             $demandes = [];
             $demandesNouvelles = 0;
             $demandesEncours = 0;
@@ -287,7 +288,7 @@ class HistoriqueController extends Controller
 
             return response()->json([
                 'error' => "error",
-                'message' => "Une erreur interne est survenue.",
+                'message' => "Une erreur interne est survenue gggg.",
                 'status' => 500
             ]);
         }

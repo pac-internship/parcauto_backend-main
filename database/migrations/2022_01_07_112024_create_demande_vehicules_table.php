@@ -30,12 +30,14 @@ class CreateDemandeVehiculesTable extends Migration
             $table->unsignedInteger('user_id');
             $table->unsignedInteger('motif_id');
             $table->unsignedInteger('type_vehicule_id');
-            $table->unsignedInteger('chauffeur_id');
-            $table->unsignedInteger('vehicule_id');
+            $table->unsignedInteger('chauffeur_id')->nullable();
+            $table->unsignedInteger('vehicule_id')->nullable();
+            $table->unsignedInteger('beneficiaire_id')->nullable();
 
             $table->foreign('type_vehicule_id')->on('type_vehicules')->references('id');
             $table->foreign('motif_id')->on('motifs')->references('id');
             $table->foreign('user_id')->on('users')->references('id');
+            $table->foreign('beneficiaire_id')->on('users')->references('id');
             $table->foreign('chauffeur_id')->on('chauffeurs')->references('id');
             $table->foreign('vehicule_id')->on('vehicules')->references('id');
             $table->timestamps();

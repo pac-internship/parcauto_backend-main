@@ -26,7 +26,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         Schema::defaultStringLength(191);
-
         // Pour que les mois s'affichent en français
         Carbon::setLocale('fr');
     }

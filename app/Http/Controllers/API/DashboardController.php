@@ -15,8 +15,7 @@ class DashboardController extends Controller
     /**
      * Récupérer les statistiques du dashboard global
      */
-    public function getDashboardStats(): JsonResponse
-    {
+    public function getDashboardStats(): JsonResponse{ 
         // 1. Nombre total de chauffeurs actifs
         $totalChauffeursActifs = Chauffeur::where('statut', 1)->count();
 
@@ -47,6 +46,7 @@ class DashboardController extends Controller
             ->get();
 
         //  Retour des statistiques globales du dashboard
+       
         return response()->json([
             'chauffeurs_actifs' => $totalChauffeursActifs,
             'vehicules_disponibles' => $vehiculesDisponibles,

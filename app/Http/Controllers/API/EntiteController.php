@@ -12,8 +12,7 @@ class EntiteController extends Controller
     /**
      * Lister toutes les entités avec leurs relations
      */
-    public function index()
-    {
+    public function index(){
         $entites = Entite::with(['parent', 'enfants', 'utilisateurs'])->get();
 
         return response()->json([

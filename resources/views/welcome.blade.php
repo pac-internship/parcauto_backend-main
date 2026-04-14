@@ -1,4 +1,27 @@
 <!DOCTYPE html>
+@php
+
+
+$tab = array(
+    ['name' => 'beneficiaire_id', 'value' => 1],
+    ['name' => 'date_depart', 'value' => "2026-04-13"],
+    ['name' => 'date_retour', 'value' => "2026-04-13"],
+    ['name' => 'escales', 'value' => "2"],
+    ['name' => 'heure_depart', 'value' => "17:24"],
+    ['name' => 'heure_retour', 'value' => "19:26"],
+    ['name' => 'motif', 'value' => "2"],
+    ['name' => 'nbre_personnes', 'value' => 2],
+    ['name' => 'objet', 'value' => "iii"],
+    ['name' => 'point_depart', 'value' => "Cotonou"],
+    ['name' => 'point_destination', 'value' => "Calavie"],
+    ['name' => 'type_vehicule_id', 'value' => "2"],
+    ['name' => 'user_id', 'value' => 1],
+);
+
+
+@endphp
+
+
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
@@ -55,6 +78,12 @@
 
                             <div class="ml-12">
                                 <div class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
+                                    <form action="{{route('deme')}}" method="post">  
+                                         @foreach($tab as $item)
+                                            <input type="hidden" name="{{$item['name']}}" value="{{$item['value']}}">
+                                          @endforeach
+                                         <button>okkkkk</button>
+                                    </form> 
                                     Laravel has wonderful, thorough documentation covering every aspect of the framework. Whether you are new to the framework or have previous experience with Laravel, we recommend reading all of the documentation from beginning to end.
                                 </div>
                             </div>
