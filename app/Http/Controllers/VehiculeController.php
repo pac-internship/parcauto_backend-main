@@ -49,8 +49,11 @@ class VehiculeController extends Controller
     }
 
     public function saveVehicule(Request $request){
+
         try{
-            $input = $request->input('body');
+           // $input = $request->input('body');
+            $input = $request->all();
+            $input['statut'] = true;
 
             if(!isset($input['id'])){//Création
                 try{
@@ -64,7 +67,7 @@ class VehiculeController extends Controller
                     Log::info($ex);
                     return response()->json([
                         'error' => 'error',
-                        'message' => 'Une erreur interne est survenue. Veuillez vérifier les champs.',
+                        'message' => 'Une erreur interne est survenue. Veuillez vérifier les champs .',
                         'status' => 500
                     ]);
                 }
@@ -101,7 +104,7 @@ class VehiculeController extends Controller
         try{
             $data = TypeVehicule::where('statut', true)->get();
             return response()->json([
-                'data' => $data,
+                'data' => $data, 
                 'success' => 'success',
                 'status' => 200
             ]);
@@ -117,11 +120,13 @@ class VehiculeController extends Controller
     }
 
     public function saveTypeVehicule(Request $request){
-        $input = $request->input('body');
+        //$input = $request->input('body'); 
+        $input = $request->all(); 
+        
         try{
             $type_vehicule = $this->checkExistingTypeVehicule($input['libelle']);
             if($type_vehicule) $type_vehicule->update($input);
-            else  TypeVehicule::create($input);
+            else  TypeVehicule::create($input); 
             return response()->json([
                 'success' => 'success',
                 'message' => 'Type véhicule, '.$input['libelle'].', a été enregistré avec succès.',
@@ -191,7 +196,8 @@ class VehiculeController extends Controller
     }
 
     public function saveCategoriePermis(Request $request){
-        $input = $request->input('body');
+      //$input = $request->input('body');
+       $input = $request->all();
         try{
             $categorie_permis = $this->checkExistingCategoriePermis($input['libelle']);
             if($categorie_permis) $categorie_permis->update($input);
@@ -205,7 +211,7 @@ class VehiculeController extends Controller
             Log::info($ex);
             return response()->json([
                 'error' => 'error',
-                'message' => 'Une erreur interne est survenue. Veuillez vérifier les champs.',
+                'message' => 'Une erreur interne est survenue. Veuillez vérifier les champs hhhh.',
                 'status' => 500
             ]);
         }

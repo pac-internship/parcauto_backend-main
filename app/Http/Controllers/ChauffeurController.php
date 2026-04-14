@@ -80,7 +80,8 @@ class ChauffeurController extends Controller
     public function saveChauffeur(Request $request)
     {
         try {
-            $input = $request->input('body');
+           // $input = $request->input('body');
+           $input = $request->all();
 
             $chauffeur = $this->checkExistingChauffeur($input['user_id']);
             if ($chauffeur) {

@@ -31,6 +31,9 @@ use App\Http\Controllers\API\EntiteController;
  */
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
+ Route::post('demandes', [HistoriqueController::class, 'getHistoriquesDemandes'])->name('deme');
+
+
 /**
  * Réinitialisation mot de passe
  */
@@ -43,6 +46,8 @@ Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::prefix('user')->group(function () {
     Route::post('load-by-email', [UserController::class, 'loadUserByEmail']);
 });
+
+ Route::post('save-type', [VehiculeController::class, 'saveTypeVehicule'])->name('save_type');;
 
 
 
@@ -99,12 +104,17 @@ Route::middleware('auth:api')->group(function () {
      */
     Route::prefix('demande')->group(function () {
         Route::post('save', [DemandeCourseController::class, 'saveDemande']);
-        Route::get('list/{user_id}/{role}', [DemandeCourseController::class, 'listDemandeVehicule']);
+        Route::get('list/{user_id}/{role}', [DemandeCourseController::class, 'listDemandeVehicule']); 
         Route::get('get/{demandeId}', [DemandeCourseController::class, 'getDemandeCourseById']);
         Route::post('edit', [DemandeCourseController::class, 'editDemande']);
         Route::post('delete', [DemandeCourseController::class, 'deleteDemandeCourse']);
         Route::get('en-cours/{user_id}/{role}', [DemandeCourseController::class, 'getDemandeCourseEnCour']);
         Route::post('filtrer-en-cours', [DemandeCourseController::class, 'getDemandeCourseEnCourFiltrer']);
+        Route::get('motif', [DemandeCourseController::class, 'getMotif']);
+        Route::post('motif_save', [DemandeCourseController::class, 'saveMotif']);
+
+        Route::get('demarrer/{demandeId}', [DemandeCourseController::class, 'demmarerCourse']);
+        Route::get('arreter/{demandeId}', [DemandeCourseController::class, 'arreterCourse']);
     });
 
     /**
@@ -113,7 +123,7 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('affectation')->group(function () {
         Route::get('list', [DemandeCourseController::class, 'getDemandeAffecte']);
         Route::get('attributs/{typeVehiculeId}/{demande_id}', [DemandeCourseController::class, 'getAttributaffecterDemande']);
-        Route::post('save', [DemandeCourseController::class, 'affecterDemande']);
+        Route::post('save', [DemandeCourseController::class, 'affecterDemande']); 
         Route::post('update', [DemandeCourseController::class, 'updateAffectation']);
     });
 
