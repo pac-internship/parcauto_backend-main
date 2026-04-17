@@ -31,7 +31,7 @@ use App\Http\Controllers\TypeVehiculeController;
 /**
  * Authentification
  */
-Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
 
 /**
  * Réinitialisation mot de passe
@@ -45,8 +45,6 @@ Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::prefix('user')->group(function () {
     Route::post('load-by-email', [UserController::class, 'loadUserByEmail']);
 });
-
-
 
 /**
  * Routes protégées par auth:api
@@ -64,10 +62,10 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('user')->group(function () {
         Route::get('all', [UserController::class, 'getAllUser']);
         Route::get('get/{userId}', [UserController::class, 'getUserById']);
-        Route::post('save', [UserController::class, 'saveUser']);
         Route::post('update', [UserController::class, 'updateUser']);
         Route::post('delete', [UserController::class, 'deleteUser']);
-        Route::get('role_all', [UserController::class, 'getAllUserRole']);
+        Route::get('/roles', [UserController::class, 'getRoles']);
+        Route::post('/save', [UserController::class, 'saveUser']);
     });
 
     /**
@@ -83,6 +81,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('get/{vehiculeId}', [VehiculeController::class, 'getVehiculeById']);
         Route::get('list', [VehiculeController::class, 'getVehicules']);
         Route::post('save', [VehiculeController::class, 'saveVehicule']);
+        Route::delete('/vehicules/{id}', [VehiculeController::class, 'deleteVehicule']);
     });
 
     /**
@@ -93,7 +92,6 @@ Route::middleware('auth:api')->group(function () {
         Route::post('save', [ChauffeurController::class, 'saveChauffeur']);
         Route::get('get/{chauffeurId}', [ChauffeurController::class, 'getChauffeurById']);
         Route::post('update-disponibilite/{chauffeurId}', [ChauffeurController::class, 'updateDisponibilite']);
-        Route::get('list-agents', [ChauffeurController::class, 'getAgents']);
     });
 
     /**
@@ -148,6 +146,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('chauffeurs', [HistoriqueController::class, 'getHistoriquesChaufeurs']);
         Route::post('export-chauffeurs', [HistoriqueController::class, 'exportPerformancesChauffeur']);
         Route::post('export-demandes', [HistoriqueController::class, 'exportHistoriqueDemandesCourses']);
+        Route::post('get-historique-performances-chauffeur', [HistoriqueController::class, 'getHistoriquePerformancesChauffeur']);
     });
 
     /**

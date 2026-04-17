@@ -327,4 +327,27 @@ class HistoriqueController extends Controller
             ]);        }
     }
 
+
+    public function getHistoriquePerformancesChauffeur(Request $request)
+{
+    try {
+        // Exemple simple
+        $data = []; // à adapter selon ta logique
+
+        return response()->json([
+            'success' => 'success',
+            'data' => $data,
+            'status' => 200
+        ]);
+    } catch (\Exception $e) {
+        \Log::error($e->getMessage());
+
+        return response()->json([
+            'error' => 'error',
+            'message' => 'Erreur interne',
+            'status' => 500
+        ]);
+    }
+}
+
 }

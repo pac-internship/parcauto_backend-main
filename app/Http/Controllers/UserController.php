@@ -104,6 +104,7 @@ class UserController extends Controller
             'prenom' => 'required|string',
             'role_id' => 'required',
             'entite_id' => 'required',
+            'tel' => 'required|string|max:20',
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
         ]);
 
@@ -282,4 +283,24 @@ class UserController extends Controller
             ]);
         }
     }
+
+    public function getRoles()
+    {
+        try {
+            $roles = Role::all();
+
+            return response()->json([
+                'success' => true,
+                'data' => $roles
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des rôles',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

@@ -10,6 +10,8 @@ use App\Models\Conduire;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use PhpParser\Node\Expr\Cast\Unset_;
+use Symfony\Component\Console\Input\Input;
 
 class VehiculeController extends Controller
 {
@@ -117,27 +119,47 @@ class VehiculeController extends Controller
         }
     }
 
-    public function saveTypeVehicule(Request $request){
-        $input = $request->input('body');
-        try{
-            $type_vehicule = $this->checkExistingTypeVehicule($input['libelle']);
-            if($type_vehicule) $type_vehicule->update($input);
-            else  TypeVehicule::create($input);
-            return response()->json([
-                'success' => 'success',
-                'message' => 'Type véhicule, '.$input['libelle'].', a été enregistré avec succès.',
-                'status' => 200
-            ]);
-        }catch(Exception $ex){
-            Log::info($ex);
-            return response()->json([
-                'error' => 'error',
-                'message' => 'Une erreur interne est survenue. Veuillez vérifier les champs.',
-                'status' => 500
-            ]);
-        }
+   public function saveTypeVehicule(Request $request)
+{
+    $input = $request->all();
+   
+
+    // 🔒 Validation
+    if (!isset($input['libelle']) || empty(trim($input['libelle']))) {
+        return response()->json([
+            'error' => 'Le libellé est obligatoire'
+        ], 400);
     }
 
+    // 🔒 Normalisation du statut
+    $statut = strtoupper($input['statut'] ?? 'ACTIF');
+
+    if (!in_array($statut, ['ACTIF', 'INACTIF'])) {
+        return response()->json([
+            'error' => 'Le statut doit être ACTIF ou INACTIF'
+        ], 400);
+    }
+
+    // 🔍 Vérifier si existe déjà
+    $existing = $this->checkExistingTypeVehicule($input['libelle']);
+
+    if ($existing) {
+        return response()->json([
+            'message' => 'Ce type de véhicule existe déjà'
+        ], 409);
+    }
+
+    // ✅ Création
+    $type_vehicule = TypeVehicule::create([
+        'libelle' => trim($input['libelle']),
+        'statut' => $statut
+    ]);
+
+    return response()->json([
+        'message' => 'Type de véhicule créé avec succès',
+        'data' => $type_vehicule
+    ], 201);
+}
     public function checkExistingTypeVehicule($libelle){
         try{
             $data = TypeVehicule::where('libelle', $libelle)->first();
@@ -174,7 +196,7 @@ class VehiculeController extends Controller
 
     public function getCategoriePermis(){
         try{
-            $data = CategoriePermis::where('statut', true)->get();
+            $data = CategoriePermis::where('statut', 'ACTIF')->get();
             return response()->json([
                 'data' => $data,
                 'success' => 'success',
@@ -268,5 +290,39 @@ class VehiculeController extends Controller
             ]);
         }
     }
+
+    public function deleteVehicule($id)
+{
+    try {
+        $vehicule = Vehicule::find($id);
+
+        if (!$vehicule) {
+            return response()->json([
+                'error' => 'not_found',
+                'message' => 'Véhicule non trouvé',
+                'status' => 404
+            ]);
+        }
+
+        // ✅ Suppression logique (soft delete)
+        $vehicule->statut = false;
+        $vehicule->save();
+
+        return response()->json([
+            'success' => 'success',
+            'message' => 'Véhicule supprimé avec succès',
+            'status' => 200
+        ]);
+
+    } catch (\Exception $ex) {
+        \Log::error($ex->getMessage());
+
+        return response()->json([
+            'error' => 'error',
+            'message' => 'Une erreur interne est survenue',
+            'status' => 500
+        ]);
+    }
+}
 
 }
