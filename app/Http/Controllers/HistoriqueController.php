@@ -47,68 +47,93 @@ class HistoriqueController extends Controller
     }
 
     //Historique des Performances Chauffeurs
-    public function getHistoriquesChaufeurs(Request $request ){
-        try{
-            $input = $request->input('body');
-            $chauffeur_id = $input['chauffeur_id'];
-            $debut = $input['date_debut'];
-            $fin = $input['date_fin'];
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
+   // ✅ getHistoriquesChaufeurs : les données arrivent en JSON body direct
+public function getHistoriquesChaufeurs(Request $request)
+{
+    try {
+        // ✅ FIX: $request->all() au lieu de $request->input('body')
+        $input = $request->all();
+        
+        $chauffeur_id = $input['chauffeur_id'] ?? null;
+        $debut = $input['date_debut'] ?? now()->startOfDay();
+        $fin   = $input['date_fin']   ?? now()->endOfDay();
 
-            $ligne_notations = DB::select("select `libelle`, round(avg(`valeur`),0) as valeur from `ligne_notations`,
-            `critere_notations` where `ligne_notations`.`created_at` >= ? and `ligne_notations`.`created_at` <= ? and `chauffeur_id` = ? and `critere_notations`.`id`=`ligne_notations`.`critere_notation_id`
-            group by `libelle`", [$debut, $fin, $chauffeur_id]);
+        $debut = Carbon::parse($debut)->startOfDay();
+        $fin   = Carbon::parse($fin)->endOfDay();
 
-            return response()->json([
-                'data' => $ligne_notations,
-                'message' => '',
-                'status' => 200
-            ],200);
-        }catch(Exception $ex){
-            Log::error($ex->getMessage());
-
-            return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
-                'status' => 500
-            ]);
-        }
-    }
-
-    /**
-     * Performance Chauffeur Export xls
-     */
-    public function exportPerformancesChauffeur(Request $request)
-    {
-        if ($request->isMethod('POST')) {
-            $input = $request->input();
-            $chauffeur_id = $input['chauffeur_id'];
-            $debut = $input['date_debut'];
-            $fin = $input['date_fin'];
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
-            try {
-                $file_name = 'PerformancesChauffeur'.$chauffeur_id.'.xls';
-                ob_end_clean();
-                ob_start();
-            return FacadesExcel::download(new ExportPerformancesChauffeur($debut, $fin, $chauffeur_id), $file_name);
-            } catch (\Exception $ex) {
-                return response()->json([
-                    'error' => "error",
-                    'message' => "Une erreur interne est survenue.",
-                    'status' => 500
-                ]);
-            }
+        // ✅ Si chauffeur_id est vide, retourner toutes les moyennes (tous chauffeurs)
+        if ($chauffeur_id) {
+            $ligne_notations = DB::select("
+                SELECT cn.libelle,
+                       ROUND(AVG(ln.valeur), 0) AS valeur
+                FROM ligne_notations ln
+                JOIN critere_notations cn ON cn.id = ln.critere_notation_id
+                WHERE ln.created_at >= ?
+                  AND ln.created_at <= ?
+                  AND ln.chauffeur_id = ?
+                GROUP BY cn.libelle
+                ORDER BY cn.libelle
+            ", [$debut, $fin, $chauffeur_id]);
         } else {
+            // Tous chauffeurs confondus
+            $ligne_notations = DB::select("
+                SELECT cn.libelle,
+                       ROUND(AVG(ln.valeur), 0) AS valeur
+                FROM ligne_notations ln
+                JOIN critere_notations cn ON cn.id = ln.critere_notation_id
+                WHERE ln.created_at >= ?
+                  AND ln.created_at <= ?
+                GROUP BY cn.libelle
+                ORDER BY cn.libelle
+            ", [$debut, $fin]);
+        }
+
+        return response()->json([
+            'data'    => $ligne_notations,
+            'message' => '',
+            'status'  => 200,
+        ], 200);
+
+    } catch (Exception $ex) {
+        Log::error($ex->getMessage());
+        return response()->json([
+            'error'   => 'error',
+            'message' => 'Une erreur interne est survenue.',
+            'status'  => 500,
+        ]);
+    }
+}
+
+// ✅ exportPerformancesChauffeur : adapter si le frontend envoie body directement
+public function exportPerformancesChauffeur(Request $request)
+{
+    if ($request->isMethod('POST')) {
+        $input = $request->all(); // ✅ FIX: plus de wrapper 'body'
+
+        $chauffeur_id = $input['chauffeur_id'] ?? '';
+        $debut = Carbon::parse($input['date_debut'] ?? now())->startOfDay();
+        $fin   = Carbon::parse($input['date_fin']   ?? now())->endOfDay();
+
+        try {
+            $file_name = 'PerformancesChauffeur_' . $chauffeur_id . '.xls';
+            ob_end_clean();
+            ob_start();
+            return FacadesExcel::download(
+                new ExportPerformancesChauffeur($debut, $fin, $chauffeur_id),
+                $file_name
+            );
+        } catch (\Exception $ex) {
+            Log::error($ex->getMessage());
             return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
-                'status' => 500
+                'error'   => 'error',
+                'message' => 'Une erreur interne est survenue.',
+                'status'  => 500,
             ]);
         }
     }
 
+    return response()->json(['error' => 'error', 'status' => 500]);
+}
     //Historique Demande
     public function getHistoriquesDemandes(Request $request){
         try{
