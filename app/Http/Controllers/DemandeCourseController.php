@@ -217,30 +217,34 @@ class DemandeCourseController extends Controller
         }
     }
 
-    public function editDemande(DemandeVehiculeRequest $request){
+ //   public function editDemande(DemandeVehiculeRequest $request){
+  public function editDemande(Request $request){
         try{
+            $date_depart = $request->input('date_depart');
+            $date_retour = $request->input('date_retour');
+            $heure_depart = $request->input('heure_depart');
+            $heure_retour = $request->input('heure_retour');
             DemandeVehicule::where('id', $request->input('demande_id'))
                     ->update([
                         'point_depart' => $request->input('point_depart'),
                         'point_destination' => $request->input('point_destination'),
                         'nbre_personnes' => $request->input('nbre_personnes'),
                         'objet' => $request->input('objet'),
-                        'type_vehicule_id' => $request->input('type_vehicule'),
+                        'type_vehicule_id' => $request->input('type_vehicule_id'),
                         'motif_id' => $request->input('motif'),
                         'beneficiaire_id' => $request->input('beneficiaire_id'),
                         'escales' => $request->input('escales'),
-                        'date_depart' => DateService::addTimeToDate($request->input('date_depart'), $request->input('heure_depart')),
-                        'heure_depart' => $request->input('heure_depart'),
+                        'date_depart' => DateService::addTimeToDate($date_depart, $heure_depart),
+                        'date_retour' => DateService::addTimeToDate($date_retour, $heure_retour),
+                        //'heure_depart' => $request->input('heure_depart'),
                     ]);
 
             return response()->json([
                 'success' => "success",
                 'status' => 200
             ], 200);
-
         }catch(Exception $ex){
             Log::error($ex->getMessage());
-
             return response()->json([
                 'error' => "error",
                 'message' => "Une erreur interne est survenue.",
@@ -492,7 +496,7 @@ class DemandeCourseController extends Controller
             //)->with('user')->get();
 
             $vehicules = Vehicule::where('type_vehicule_id', $typeVehiculeId)
-                ->where('disponibilite','=', env('STATUT_DISPONIBLE'))
+                ->where('disponibilite','=', env('STATUT_DISPONIBLE')) 
                 ->where('statut','=', 1)
                 ->get();
             $chauffeurs = Chauffeur::with('user')
@@ -521,8 +525,7 @@ class DemandeCourseController extends Controller
     }
 
     public function verifiedChauffeurAffectation($chauffeurId, $demandeId){
-
-  try{
+     try{
 
             $demande = DemandeVehicule::where('id', $demandeId)->first();
 
@@ -662,7 +665,10 @@ class DemandeCourseController extends Controller
             ]);
 
             $demande->statut = env('STATUT_DEMANDE_COURSE_AFFECTEE'); 
+            $demande->vehicule_id = $vehicule;
+            $demande->chauffeur_id = $chauffeur;
             $demande->save();
+
             // save new occupation
             OccupationService::saveOccupation($affectation, $demande->date_depart, $demande->date_retour);
 

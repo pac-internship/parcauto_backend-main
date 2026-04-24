@@ -3,7 +3,7 @@
 
 
 $tab = array(
-    ['name' => 'beneficiaire_id', 'value' => 1],
+    ['name' => 'beneficiaire_id', 'value' => 2],
     ['name' => 'date_depart', 'value' => "2026-04-13"],
     ['name' => 'date_retour', 'value' => "2026-04-13"],
     ['name' => 'escales', 'value' => "2"],
@@ -15,7 +15,7 @@ $tab = array(
     ['name' => 'point_depart', 'value' => "Cotonou"],
     ['name' => 'point_destination', 'value' => "Calavie"],
     ['name' => 'type_vehicule_id', 'value' => "2"],
-    ['name' => 'user_id', 'value' => 1],
+    ['name' => 'user_id', 'value' => 2],
 );
 
 
@@ -78,7 +78,7 @@ $tab = array(
 
                             <div class="ml-12">
                                 <div class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
-                                    <form action="{{route('deme')}}" method="post">  
+                                    <form action="{{route('edeme')}}" method="post">  
                                          @foreach($tab as $item)
                                             <input type="hidden" name="{{$item['name']}}" value="{{$item['value']}}">
                                           @endforeach
