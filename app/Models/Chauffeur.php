@@ -15,7 +15,7 @@ class Chauffeur extends Model
         'INDISPONIBLE',
         'REPOS',
         'COURS',
-    ];
+    ]; 
 
     protected $fillable = [
         'matricule',
@@ -57,4 +57,5 @@ class Chauffeur extends Model
     public function occupations() {
         return $this->hasMany(Occupation::class, 'chauffeur_id', 'id');
     }
+
 }

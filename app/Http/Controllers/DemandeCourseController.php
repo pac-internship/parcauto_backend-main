@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\Vehicule;
 use App\Services\DateService;
 use App\Services\DemandeCourseService;
+use App\Services\GeoLocalisationService;
 use App\Services\MoovApiService;
 use App\Services\OccupationService;
 use Carbon\Carbon;
@@ -751,44 +752,50 @@ class DemandeCourseController extends Controller
     }
 
 
-    public function demmarerCourse($demande_course_id){
-        try{
-            $data =  DemandeVehicule::where('id', $demande_course_id)->first();
+   public function demmarerCourse(Request $request, $demande_course_id, GeoLocalisationService $geoService){
+       try{
+            $data = DemandeVehicule::where('id', $demande_course_id)->first();
 
-            if($data->statut !=env('STATUT_DEMANDE_COURSE_AFFECTEE'))
-            {
-                return response()->json( [
-                    'error'=>"error",
-                    'message' => "Ressource non autorisée",
+           if(!$data || $data->statut != env('STATUT_DEMANDE_COURSE_AFFECTEE')){
+               return response()->json([
+                   'error' => "error",
+                   'message' => "Ressource non autorisée",
                     'status' => 401
-                ]);
+               ]);
             }
 
             $data->statut = env('STATUT_DEMANDE_COURSE_DEMARREE');
-            $date =Carbon::now()->format("Y-m-d H:i:s");
+            $date = now();
             $data->date_depart_effectif = $date;
             $data->save();
-            return response()->json([
+
+           if($request->has(['latitude', 'longitude'])) {
+                   $geoService->start(
+                   $data->id,
+                   $request->latitude,
+                   $request->longitude
+                );
+            }
+
+             return response()->json([
                 'data' => $data,
                 'success' => 'success',
-                'message' => '',
+                'message' => 'Course démarrée avec géolocalisation',
                 'status' => 200
             ], 200);
 
         }catch(Exception $ex){
-            Log::error($ex->getMessage());
+         Log::error($ex->getMessage());
 
-            return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
-                'status'  => 500
-            ], 500);
-        }
-
-
+        return response()->json([
+            'error' => "error",
+            'message' => "Une erreur interne est survenue.",
+            'status'  => 500
+        ], 500);
+      }
     }
 
-    public function arreterCourse($demande_course_id){
+    public function arreterCourse(Request $request, $demande_course_id, GeoLocalisationService $geoService){
         try{
             $data =  DemandeVehicule::with('user','motif','beneficiaire')
             ->where('id', $demande_course_id)->first();
@@ -806,6 +813,16 @@ class DemandeCourseController extends Controller
             $date =Carbon::now()->format("Y-m-d H:i:s");
             $data->date_retour_effectif = $date;
             $data->save();
+
+             if($request->has(['latitude', 'longitude'])) {
+                   $geoService->end(
+                   $data->id,
+                   $request->latitude,
+                   $request->longitude
+                );
+            }
+
+
             // delete old occupation
             OccupationService::deleteOldOccupation($data);
 

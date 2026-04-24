@@ -1,21 +1,22 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\VehiculeController;
-use App\Http\Controllers\ChauffeurController;
 use App\Http\Controllers\API\DashboardController;
-use App\Http\Controllers\MotifController;
-use App\Http\Controllers\DemandeCourseController;
-use App\Http\Controllers\PlanningGardeController;
-use App\Http\Controllers\NoteController;
+use App\Http\Controllers\API\EntiteController;
+use App\Http\Controllers\Api\GeoLocalisationController;
+use App\Http\Controllers\API\PasswordResetController;
+use App\Http\Controllers\API\StatistiqueController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChauffeurController;
 use App\Http\Controllers\CritereDeNotationController;
+use App\Http\Controllers\DemandeCourseController;
 use App\Http\Controllers\HistoriqueController;
 use App\Http\Controllers\JournalSmsController;
-use App\Http\Controllers\API\StatistiqueController;
-use App\Http\Controllers\API\PasswordResetController;
-use App\Http\Controllers\API\EntiteController;
+use App\Http\Controllers\MotifController;
+use App\Http\Controllers\NoteController;
+use App\Http\Controllers\PlanningGardeController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\VehiculeController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -115,8 +116,14 @@ Route::middleware('auth:api')->group(function () {
         Route::get('motif', [DemandeCourseController::class, 'getMotif']);
         Route::post('motif_save', [DemandeCourseController::class, 'saveMotif']);
 
+        Route::post('demarrer/{demandeId}', [DemandeCourseController::class, 'demmarerCourse']);
+        Route::post('arreter/{demandeId}', [DemandeCourseController::class, 'arreterCourse']);
+        Route::get('get_geo/{demandeId}', [GeoLocalisationController::class, 'show']);
+
+    /*
         Route::get('demarrer/{demandeId}', [DemandeCourseController::class, 'demmarerCourse']);
         Route::get('arreter/{demandeId}', [DemandeCourseController::class, 'arreterCourse']);
+    */
     });
 
     /**

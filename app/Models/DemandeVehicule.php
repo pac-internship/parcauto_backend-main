@@ -100,4 +100,8 @@ class DemandeVehicule extends Model
             'vehicule_id'
         );
     }
+
+    public function geoLocalisation() {
+        return $this->hasMany(geoLocalisation::class, 'demande_vehicule_id');
+    }
 }
