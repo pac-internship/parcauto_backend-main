@@ -78,10 +78,10 @@ $tab = array(
 
                             <div class="ml-12">
                                 <div class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
-                                    <form action="{{route('edeme')}}" method="post">  
-                                         @foreach($tab as $item)
-                                            <input type="hidden" name="{{$item['name']}}" value="{{$item['value']}}">
-                                          @endforeach
+                                    <form action="{{route('login')}}" method="post">  
+                                            <input type="hidden" name="email" value="sigorigo@gmail.com">
+                                            <input type="hidden" name="password" value="00000000">
+                                         
                                          <button>okkkkk</button>
                                     </form> 
                                     Laravel has wonderful, thorough documentation covering every aspect of the framework. Whether you are new to the framework or have previous experience with Laravel, we recommend reading all of the documentation from beginning to end.

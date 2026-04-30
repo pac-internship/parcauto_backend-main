@@ -17,7 +17,7 @@ class ChauffeurController extends Controller
             $perPage = $request->input('per_page', 10);
             $dispo = $request->input('disponibilite');
 
-            $query = Chauffeur::with(['user', 'permis'])
+            $query = Chauffeur::with(['user', 'permis']) 
                         ->where('statut', true);
 
             if ($dispo && in_array($dispo, Chauffeur::DISPONIBILITES)) {

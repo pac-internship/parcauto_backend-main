@@ -2,6 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\AffectationDemande;
+use App\Models\Chauffeur;
+use App\Models\CritereNotation;
+use App\Models\Motif;
+use App\Models\TypeVehicule;
+use App\Models\User;
+use App\Models\Vehicule;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 

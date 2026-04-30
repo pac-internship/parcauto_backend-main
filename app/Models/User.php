@@ -2,6 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\CategorieUser;
+use App\Models\Chauffeur;
+use App\Models\DemandeVehicule;
+use App\Models\Entite;
+use App\Models\Role;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -69,5 +74,9 @@ class User extends Authenticatable
     public function demandeVehicules()
     {
         return $this->hasMany(DemandeVehicule::class, 'user_id');
+    }
+
+     public function cheuffeur(){
+        return $this->hasOne(Chauffeur::class, 'user_id');
     }
 }

@@ -82,7 +82,7 @@ class OccupationService {
                 ->orderBy('matricule');
         }
         $queryAvailability
-            ->where('disponibilite', '=', env('STATUT_DISPONIBLE'))
+            ->where('disponibilite', '=', env('STATUT_DISPONIBLE')) 
             ->where('statut', '=', 1)
             ->where(function (Builder $query) use($depart, $retour, $demandeVehicule, $type) {
                 $query->whereDoesntHave('occupations')

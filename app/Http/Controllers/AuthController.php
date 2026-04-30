@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Chauffeur;
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -13,7 +14,7 @@ class AuthController extends Controller
 {
 
     public function login(Request $request){ 
-        try{
+      try{
             $validator = Validator::make($request->all(), [
                 'email' => 'email|required',
                 'password' => 'required'
@@ -33,6 +34,8 @@ class AuthController extends Controller
 
             if(auth()->user() != null ) { 
                 $user = auth()->user(); $user->load('role');
+                $chauffeur = Chauffeur::where('user_id',$user->id)->first();
+                $user->is_chauffeur = $chauffeur != null ? "yes" : "no";
                 $accessToken = auth()->user()->createToken('authToken')->accessToken;
                 return response(['user' => $user, 'access_token' => $accessToken, "status"=> "success",]);
             }
@@ -40,10 +43,11 @@ class AuthController extends Controller
             Log::error($ex->getMessage());
             return response()->json([
                 'error'=>"error",
-                'message'=>"Une erreur interne est survenue gggg.",
+                'message'=>"Une erreur interne est survenue.",
                 'statut'=>500
             ],500);
         }
+
     }
 
     

@@ -32,9 +32,6 @@ use Illuminate\Support\Facades\Route;
  */
 Route::post('/login', [AuthController::class, 'login'])->name('login'); 
 
-Route::post('demandes', [HistoriqueController::class, 'getHistoriquesDemandes'])->name('deme');
-
-Route::post('edit', [DemandeCourseController::class, 'editDemande'])->name('edeme');;
 
 
 /**
@@ -129,7 +126,7 @@ Route::middleware('auth:api')->group(function () {
     /**
      * Affectations
      */
-    Route::prefix('affectation')->group(function () {  
+    Route::prefix('affectation')->group(function () {   
         Route::get('list', [DemandeCourseController::class, 'getDemandeAffecte']);
         Route::get('attributs/{typeVehiculeId}/{demande_id}', [DemandeCourseController::class, 'getAttributaffecterDemande']);
         Route::post('save', [DemandeCourseController::class, 'affecterDemande']); 
