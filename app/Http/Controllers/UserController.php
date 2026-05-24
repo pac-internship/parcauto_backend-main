@@ -44,8 +44,7 @@ class UserController extends Controller
     public function getAllUserRole()
     {
         try {
-            $roles = Role::all();
-
+            $roles = Role::all(); 
             return response()->json([
                 'data' => $roles,
                 'message' => '',
@@ -256,7 +255,7 @@ class UserController extends Controller
         }
 
         try {
-            $user = User::with(['role', 'demandeVehicule', 'direction', 'categorieUser'])
+            $user = User::with(['role', 'demandeVehicules', 'direction', 'categorieUser'])
                 ->where('email', $request->input('email'))
                 ->first();
 
@@ -283,3 +282,4 @@ class UserController extends Controller
         }
     }
 }
+ 

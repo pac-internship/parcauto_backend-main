@@ -1,30 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Http\Requests\DemandeVehiculeRequest;
-use App\Services\DateService;
-use App\Services\DemandeCourseService;
-use App\Services\OccupationService;
-use App\Mail\NewDemandeMail;
-use App\Mail\DemandeNonNoteMail;
-use App\Mail\NotificationChauffeurMail;
-use App\Mail\NewDemandeMailAdmin;
 use Exception;
 use Carbon\Carbon;
-use App\Models\Vehicule;
-use App\Models\User;
 use Illuminate\Support\Facades\Mail;
-use App\Models\Chauffeur;
 use App\Models\JournalSms;
-
 use Illuminate\Http\Request;
-use App\Models\DemandeVehicule;
-
-use App\Models\AffectationDemande;
-use App\Models\TypeVehicule;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 use function PHPUnit\Framework\isEmpty;
 
@@ -41,11 +23,10 @@ class JournalSmsController extends Controller
             $smsList = [];
 
             
-                $smsList = JournalSms::with('user')
-                ->whereBetween('created_at',[$startOfMonth,$actualDate])
+            $smsList = JournalSms::with('user')->whereBetween('created_at',[$startOfMonth,$actualDate])
                 ->orderBy('created_at', 'DESC')
                 ->get();
-            
+
 
             return response()->json([
                 'data'=> $smsList,

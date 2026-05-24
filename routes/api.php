@@ -30,8 +30,8 @@ use Illuminate\Support\Facades\Route;
 /**
  * Authentification
  */
-Route::post('/login', [AuthController::class, 'login'])->name('login'); 
 
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 
 /**
@@ -46,8 +46,6 @@ Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::prefix('user')->group(function () {
     Route::post('load-by-email', [UserController::class, 'loadUserByEmail']);
 });
-
- Route::post('save-type', [VehiculeController::class, 'saveTypeVehicule'])->name('save_type');;
 
 
 
@@ -76,7 +74,7 @@ Route::middleware('auth:api')->group(function () {
     /**
      * Véhicules
      */
-    Route::prefix('vehicule')->group(function () {
+    Route::prefix('vehicule')->group(function () { 
         Route::get('type', [VehiculeController::class, 'getTypesVehicules']);
         Route::post('save-type', [VehiculeController::class, 'saveTypeVehicule']);
         Route::get('categorie-permis', [VehiculeController::class, 'getCategoriePermis']);
@@ -116,6 +114,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('demarrer/{demandeId}', [DemandeCourseController::class, 'demmarerCourse']);
         Route::post('arreter/{demandeId}', [DemandeCourseController::class, 'arreterCourse']);
         Route::get('get_geo/{demandeId}', [GeoLocalisationController::class, 'show']);
+        Route::post('geo_intermediaire_coord/{demandeId}', [GeoLocalisationController::class, 'saveIntermediaireLocationCource']);
 
     /*
         Route::get('demarrer/{demandeId}', [DemandeCourseController::class, 'demmarerCourse']);
@@ -158,17 +157,18 @@ Route::middleware('auth:api')->group(function () {
      */
     Route::prefix('historiques')->group(function () {
         Route::get('directions', [HistoriqueController::class, 'getDirections']);
-        Route::post('demandes', [HistoriqueController::class, 'getHistoriquesDemandes']);
+        Route::post('demandes', [HistoriqueController::class, 'getHistoriquesDemandes']); 
         Route::post('chauffeurs', [HistoriqueController::class, 'getHistoriquesChaufeurs']);
         Route::post('export-chauffeurs', [HistoriqueController::class, 'exportPerformancesChauffeur']);
         Route::post('export-demandes', [HistoriqueController::class, 'exportHistoriqueDemandesCourses']);
+        Route::post('export-demandes-pdf', [HistoriqueController::class, 'exportHistoriqueDemandesCoursePdf']);
     });
 
     /**
      * Journal SMS
      */
     Route::prefix('journal-sms')->group(function () {
-        Route::get('list', [JournalSmsController::class, 'getAllSMS']);
+        Route::get('list', [JournalSmsController::class, 'getAllSMS']); 
         Route::post('search', [JournalSmsController::class, 'searchSMS']);
     });
 

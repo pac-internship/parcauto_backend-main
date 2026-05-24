@@ -16,7 +16,9 @@ class GeoLocalisation extends Model
         'end_latitude',
         'end_longitude',
         'started_at',
-        'ended_at'
+        'ended_at',
+        'entermediaire_lon_lat',
+        'km_total'
     ];
 
     public function demandeVehicule()

@@ -11,6 +11,7 @@ use App\Models\AffectationDemande;
 use App\Models\Chauffeur;
 use App\Models\Conduire;
 use App\Models\DemandeVehicule;
+use App\Models\GeoLocalisation;
 use App\Models\JournalSms;
 use App\Models\Motif;
 use App\Models\TypeVehicule;
@@ -33,7 +34,6 @@ use function PHPUnit\Framework\isEmpty;
 
 class DemandeCourseController extends Controller
 {
-    //
 
     public function getMotif(){
          try{
@@ -260,7 +260,7 @@ class DemandeCourseController extends Controller
 
             $data = [];
             
-            if($role == env('ROLE_ADMIN')){ 
+            if($role == env('ROLE_ADMIN') || $role == env('ROLE_GESTIONNAIRE')){ 
                 $data = DemandeVehicule::with('typeVehicule', 'motif', 'affectation','user','beneficiaire')
                 ->where('is_note','=',false)
                 ->orderBy('created_at', 'DESC')
@@ -305,7 +305,7 @@ class DemandeCourseController extends Controller
 
             $demandeVehicules = [];
 
-            if($request->input('role') == env('ROLE_ADMIN')){
+            if($request->input('role') == env('ROLE_ADMIN') || $request->input('role') == env('ROLE_GESTIONNAIRE')){
                 $demandeVehicules=DemandeVehicule::with('typeVehicule', 'motif', 'affectation','user','beneficiaire')->whereBetween('created_at',[$debut,$fin])
                 ->where('is_note','=',0)
                 ->orderBy('created_at', 'DESC')
@@ -348,7 +348,7 @@ class DemandeCourseController extends Controller
 
             $data = [];
 
-            if($role == env('ROLE_ADMIN')){
+            if($role == env('ROLE_ADMIN') || $role == env('ROLE_GESTIONNAIRE')){
                 $data = DemandeVehicule::with('typeVehicule', 'motif', 'affectation','user','beneficiaire')
                 ->orderBy('created_at', 'DESC')
                 ->get();
@@ -391,7 +391,7 @@ class DemandeCourseController extends Controller
 
             $demandeVehicules = [];
 
-            if($request->input('role') == env('ROLE_ADMIN')){
+            if($request->input('role') == env('ROLE_ADMIN') || $request->input('role') == env('ROLE_GESTIONNAIRE')){
                 $demandeVehicules=DemandeVehicule::with('typeVehicule', 'motif', 'affectation','beneficiaire')
                 ->whereBetween('created_at',[$debut,$fin])
                 ->orderBy('created_at', 'DESC')
@@ -859,7 +859,7 @@ class DemandeCourseController extends Controller
                 'status' => 200
             ], 200);
 
-        }catch(Exception $ex){
+        }catch(Exception $ex){ 
          Log::error($ex->getMessage());
 
         return response()->json([
@@ -904,7 +904,7 @@ class DemandeCourseController extends Controller
             }
 
              if($request->has(['latitude', 'longitude'])) {
-                   $geoService->end(
+                   $geoService->end( 
                    $data->id,
                    $request->latitude,
                    $request->longitude
@@ -1062,34 +1062,41 @@ class DemandeCourseController extends Controller
 
 
     private function calculerScoreChauffeur($chauffeur){
-       $score = 0;
-       $score += 50;
 
-      $nbCourses = DemandeVehicule::where('chauffeur_id', $chauffeur->id)->whereDate('created_at', today())->count();
+    $score = 0;
+    $score += 50;
 
-      $score += max(0, 20 - $nbCourses);
+    $nbCourses = DemandeVehicule::where('chauffeur_id', $chauffeur->id)
+        ->whereDate('created_at', today())
+        ->count();
 
-      switch ($chauffeur->disponibilite) {
-          case 'REPOS':
-              $score += 10;
-              break;
-          case 'DISPONIBLE':
-              $score += 5;
-              break;
-          case 'COURSE':
-              $score -= 20;
-              break;
-          case 'INDISPONIBLE':
-              $score -= 50;
-              break;
+    $score += max(0, 20 - $nbCourses);
+
+    if ($chauffeur->annee_permis != null && preg_match('/^\d{4}$/', $chauffeur->annee_permis)) {
+        $anciennete = now()->year - (int)$chauffeur->annee_permis;
+        $score += $anciennete;
     }
-    if($chauffeur->annee_permis != null && preg_match('/^\d{4}$/', $chauffeur->annee_permis)){
-       $anciennete = now()->year - (int)$chauffeur->annee_permis;
-          $score += $anciennete;
+
+    $kmJour = 0;
+
+    $coursesAujourdhui = DemandeVehicule::where('chauffeur_id', $chauffeur->id)
+        ->whereDate('created_at', today())
+        ->pluck('id');
+
+    $kmJour = GeoLocalisation::whereIn('demande_vehicule_id', $coursesAujourdhui)->whereDate('created_at', today())->sum('km_total');
+
+    $totalKmFlotte = GeoLocalisation::whereDate('created_at', today())->sum('km_total');
+
+    $ratio = $totalKmFlotte > 0 ? ($kmJour / $totalKmFlotte) : 0;
+
+    if ($ratio < 0.1) {
+          $score += 30;
+    } elseif ($ratio < 0.25) {
+         $score += 15;
+    } else {
+        $score -= 10;
     }
-   
-    return $score;
-    
-  }
+       return $score;
+   }
 
 }

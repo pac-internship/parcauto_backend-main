@@ -47,12 +47,12 @@ class DemandeVehicule extends Model
 
     public function motif()
     {
-        return $this->belongsTo(Motif::class, 'motif_id', 'id');
+        return $this->belongsTo(Motif::class, 'motif_id', 'id'); 
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id')->with('entite');
+        return $this->belongsTo(User::class, 'user_id', 'id')->with('entite'); 
     }
 
     public function beneficiaire()

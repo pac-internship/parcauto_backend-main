@@ -96,10 +96,8 @@ class DashboardController extends Controller
             $demandesTermineesListe = $this->getDemandesTermineesListe();
 
             
-            
             $sante = $this->calculateSystemHealth($totalVehicules, $chauffeursActifs, $demandesEnCours);
 
-           
             
             return response()->json([
                 'total_vehicules' => $totalVehicules,
@@ -275,8 +273,7 @@ class DashboardController extends Controller
     /**
      * Récupérer les demandes groupées par jour de la semaine (cette semaine)
      */
-    private function getDemandesParJour(): array
-    {
+    private function getDemandesParJour(): array{
         $jours = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
         $data = array_fill(0, 7, 0);
 
@@ -285,8 +282,9 @@ class DashboardController extends Controller
             Carbon::now()->endOfWeek(Carbon::SUNDAY)
         ])->get();
 
+
         foreach ($demandesCetteSemaine as $demande) {
-            $jour = $demande->created_at->dayOfWeek - 1; // 0 = Lundi
+            $jour = Carbon::parse($demande->created_at)->dayOfWeek - 1;
             if ($jour >= 0 && $jour < 7) {
                 $data[$jour]++;
             }
@@ -312,7 +310,7 @@ class DashboardController extends Controller
         ])->get();
 
         foreach ($affectationsCetteSemaine as $affectation) {
-            $jour = $affectation->created_at->dayOfWeek - 1;
+            $jour = Carbon::parse($affectation->created_at)->dayOfWeek - 1;
             if ($jour >= 0 && $jour < 7) {
                 $data[$jour]++;
             }
@@ -339,7 +337,7 @@ class DashboardController extends Controller
             ])->get();
 
         foreach ($demandesTermineesCetteSemaine as $demande) {
-            $jour = $demande->updated_at->dayOfWeek - 1;
+            $jour = Carbon::parse($demande->updated_at)->dayOfWeek - 1;
             if ($jour >= 0 && $jour < 7) {
                 $data[$jour]++;
             }

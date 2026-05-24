@@ -26,142 +26,39 @@ class HistoriqueDemandes extends Controller implements FromArray
     }
 
 
-    public function array(): array
-    {
-        //Parmas date_debut and date_fin
-        if(!$this->vehicule_id && !$this->chauffeur_id && !$this->point_destination){
-            $debut = $this->debut;
-            $fin = $this->fin;
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
-            $demandes = DemandeVehicule::with(['vehicule', 'typeVehicule', 'motif', 'user' => function ($query) {
-                $query->with('direction');
-            }, 'chauffeur' => function ($query) {
-                $query->with('user');
-            }])->whereBetween('date', [$debut, $fin])->get();
-            
-        }
-
-        //Parmas date_debut, date_fin and véhicule
-        if($this->vehicule_id && !$this->chauffeur_id && !$this->point_destination){
-            $debut = $this->debut;
-            $fin = $this->fin;
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
-                            
-            $demandes = DemandeVehicule::with(['vehicule', 'typeVehicule', 'motif', 'user' => function ($query) {
-                $query->with('direction');
-            }, 'chauffeur' => function ($query) {
-                $query->with('user');
-            }])->where('vehicule_id', $this->vehicule_id)->whereBetween('date', [$debut, $fin])->get();
-            
-        }
-
-        //Parmas date_debut, date_fin and chauffeur
-        if(!$this->vehicule_id && $this->chauffeur_id && !$this->point_destination){
-            $debut = $this->debut;
-            $fin = $this->fin;
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
-                            
-            $demandes = DemandeVehicule::with(['vehicule', 'typeVehicule', 'motif', 'user' => function ($query) {
-                $query->with('direction');
-            }, 'chauffeur' => function ($query) {
-                $query->with('user');
-            }])->where('chauffeur_id', $this->chauffeur_id)->whereBetween('date', [$debut, $fin])->get();
-
-        }
-
-        //Parmas date_debut, date_fin and destination
-        if(!$this->vehicule_id && !$this->chauffeur_id && $this->point_destination){
-            $debut = $this->debut;
-            $fin = $this->fin;
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
-            
-            $demandes = DemandeVehicule::with(['vehicule', 'typeVehicule', 'motif', 'user' => function ($query) {
-                $query->with('direction');
-            }, 'chauffeur' => function ($query) {
-                $query->with('user');
-            }])->where('point_destination', 'like', '%'.$this->point_destination.'%')->whereBetween('date', [$debut, $fin])->get();
-
-        }
-
-        //All Parmas is set
-        if($this->vehicule_id && $this->chauffeur_id && $this->point_destination){
-            $debut = $this->debut;
-            $fin = $this->fin;
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
-                            
-            $demandes = DemandeVehicule::with(['vehicule', 'typeVehicule', 'motif', 'user' => function ($query) {
-                $query->with('direction');
-            }, 'chauffeur' => function ($query) {
-                $query->with('user');
-            }])->where('point_destination', 'like', '%'.$this->point_destination.'%')
-            ->where('chauffeur_id', $this->chauffeur_id)
-            ->where('vehicule_id', $this->vehicule_id)
-            ->whereBetween('date', [$debut, $fin])->get();
-            
-        }
-
-        //Parmas Chauffeur + Vehicule
-        if($this->vehicule_id && $this->chauffeur_id && !$this->point_destination){
-            $debut = $this->debut;
-            $fin = $this->fin;
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
-                            
-            $demandes = DemandeVehicule::with(['vehicule', 'typeVehicule', 'motif', 'user' => function ($query) {
-                $query->with('direction');
-            }, 'chauffeur' => function ($query) {
-                $query->with('user');
-            }])->where('chauffeur_id', $this->chauffeur_id)
-            ->where('vehicule_id', $this->vehicule_id)
-            ->whereBetween('date', [$debut, $fin])->get();
-            
-        }
-
-        //Parmas is set Chauffeur + Destination
-        if(!$this->vehicule_id && $this->chauffeur_id && $this->point_destination){
-            $debut = $this->debut;
-            $fin = $this->fin;
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
-                            
-            $demandes = DemandeVehicule::with(['vehicule', 'typeVehicule', 'motif', 'user' => function ($query) {
-                $query->with('direction');
-            }, 'chauffeur' => function ($query) {
-                $query->with('user');
-            }])->where('point_destination', 'like', '%'.$this->point_destination.'%')
-            ->where('chauffeur_id', $this->chauffeur_id)
-            ->whereBetween('date', [$debut, $fin])->get();
-            
-        }
+    public function array(): array{
         
-        //Parmas Vehicule + Destination
-        if($this->vehicule_id && !$this->chauffeur_id && $this->point_destination){
-            $debut = $this->debut;
-            $fin = $this->fin;
-            $debut = Carbon::parse($debut)->startOfDay();
-            $fin = Carbon::parse($fin)->endOfDay();
-                            
-            $demandes = DemandeVehicule::with(['vehicule', 'typeVehicule', 'motif', 'user' => function ($query) {
-                $query->with('direction');
-            }, 'chauffeur' => function ($query) {
-                $query->with('user');
-            }])->where('point_destination', 'like', '%'.$this->point_destination.'%')
-            ->where('vehicule_id', $this->vehicule_id)
-            ->whereBetween('date', [$debut, $fin])->get();
-            
-        }
+        $debut = $this->debut;
+        $fin = $this->fin;
+        $debut = Carbon::parse($debut)->startOfDay();
+        $fin = Carbon::parse($fin)->endOfDay();
 
+        $query = DemandeVehicule::with(['vehicule', 'typeVehicule', 'motif', 'user' => function ($q) {
+            $q->with('entite');
+        }, 'chauffeur' => function ($q) {
+            $q->with('user');
+        }])->whereBetween('created_at', [$debut, $fin]);
+
+        
+        if(!empty($this->vehicule_id)){
+            $query->where('vehicule_id', $this->vehicule_id);
+        }
+            
+        if(!empty($this->chauffeur_id)){
+            $query->where('chauffeur_id', $this->chauffeur_id);
+        }
+            
+        if(!empty($this->point_destination)){
+            $query->where('point_destination', 'like', '%'.$this->point_destination.'%');
+        }
+            
+        $demandes = $query->get();
         
         $journal_array[] = array(
             'Référence',
             'Date Demande', 
             'Demandeur', 
-            'Direction', 
+            'Entite', 
             'Chauffeur',
             'Vehicule', 
             'Type Véhicule', 
@@ -178,9 +75,9 @@ class HistoriqueDemandes extends Controller implements FromArray
                 if($demande->statut == env('STATUT_DEMANDE_COURSE_CREEE')){
                     $journal_array[] = array(
                         'Reference' => $demande->id,
-                        'Date Demande' => $demande->date,  
+                        'Date Demande' => $demande->created_at,  
                         'Demandeur' => $demande->user->nom.' '.$demande->user->prenom, 
-                        'Direction' => $demande->user->direction->code,
+                        'Entite' => $demande->user->entite->code,
                         'Chauffeur' => 'Non affectée',
                         'Vehicule' => 'Non affectée',
                         'Type Véhicule'=>$demande->typeVehicule->libelle, 
@@ -196,9 +93,9 @@ class HistoriqueDemandes extends Controller implements FromArray
                         'Reference' => $demande->id,
                         'Date Demande' => $demande->date,  
                         'Demandeur' => $demande->user->nom.' '.$demande->user->prenom, 
-                        'Direction' => $demande->user->direction->code,
-                        'Chauffeur' => $demande->chauffeur->user->nom.' '.$demande->chauffeur->user->prenom,
-                        'Vehicule' =>  $demande->vehicule->immatr, 
+                        'Entite' => $demande->user->entite->code,
+                        'Chauffeur' => $demande->chauffeur?->user->nom.' '.$demande->chauffeur?->user->prenom,
+                        'Vehicule' =>  $demande->vehicule?->immatr, 
                         'Type Véhicule'=>$demande->typeVehicule->libelle, 
                         'Effectif'=> $demande->nbre_personnes, 
                         'Trafic' => $demande->point_depart.' à '.$demande->point_destination,

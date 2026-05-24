@@ -23,6 +23,9 @@ return new class extends Migration
             $table->timestamp('started_at')->nullable();
             $table->timestamp('ended_at')->nullable();
 
+            $table->text('entermediaire_lon_lat')->nullable();
+            $table->decimal('km_total', 10, 7)->nullable();
+
             $table->timestamps();
 
             $table->foreign('demande_vehicule_id')->on('demande_vehicules')->references('id')->onDelete('cascade');;
