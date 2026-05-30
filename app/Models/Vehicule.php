@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\AffectationDemande;
+use App\Models\CategoriePermis;
+use App\Models\Occupation;
+use App\Models\TypeVehicule;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 

@@ -2,6 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\AffectationDemande;
+use App\Models\Chauffeur;
+use App\Models\CritereNotation;
+use App\Models\Motif;
+use App\Models\TypeVehicule;
+use App\Models\User;
+use App\Models\Vehicule;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -40,12 +47,12 @@ class DemandeVehicule extends Model
 
     public function motif()
     {
-        return $this->belongsTo(Motif::class, 'motif_id', 'id');
+        return $this->belongsTo(Motif::class, 'motif_id', 'id'); 
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id')->with('entite');
+        return $this->belongsTo(User::class, 'user_id', 'id')->with('entite'); 
     }
 
     public function beneficiaire()
@@ -99,5 +106,9 @@ class DemandeVehicule extends Model
             'id',
             'vehicule_id'
         );
+    }
+
+    public function geoLocalisation() {
+        return $this->hasMany(geoLocalisation::class, 'demande_vehicule_id');
     }
 }

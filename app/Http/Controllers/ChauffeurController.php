@@ -17,7 +17,7 @@ class ChauffeurController extends Controller
             $perPage = $request->input('per_page', 10);
             $dispo = $request->input('disponibilite');
 
-            $query = Chauffeur::with(['user', 'permis'])
+            $query = Chauffeur::with(['user', 'permis']) 
                         ->where('statut', true);
 
             if ($dispo && in_array($dispo, Chauffeur::DISPONIBILITES)) {
@@ -47,9 +47,8 @@ class ChauffeurController extends Controller
         try {
             $chauffeurUserIds = Chauffeur::where('statut', true)->pluck('user_id')->toArray();
 
-            $data = User::where('statut', true)
-                ->whereNotIn('id', $chauffeurUserIds)
-                ->get();
+            $data = User::with(['role'])
+                        ->where('statut', true)->whereNotIn('id', $chauffeurUserIds)->get();
 
             return response()->json([
                 'data' => $data,
@@ -81,7 +80,8 @@ class ChauffeurController extends Controller
     public function saveChauffeur(Request $request)
     {
         try {
-            $input = $request->input('body');
+           // $input = $request->input('body');
+           $input = $request->all();
 
             $chauffeur = $this->checkExistingChauffeur($input['user_id']);
             if ($chauffeur) {

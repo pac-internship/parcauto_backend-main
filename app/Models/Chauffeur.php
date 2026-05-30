@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,9 +16,9 @@ class Chauffeur extends Model
         'INDISPONIBLE',
         'REPOS',
         'COURS',
-    ];
+    ]; 
 
-    protected $fillable = [
+    protected $fillable = [ 
         'matricule',
         'num_permis',
         'adresse',
@@ -57,4 +58,5 @@ class Chauffeur extends Model
     public function occupations() {
         return $this->hasMany(Occupation::class, 'chauffeur_id', 'id');
     }
+
 }

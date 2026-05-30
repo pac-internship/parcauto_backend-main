@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Exception;
 
 class UserController extends Controller
 {
@@ -17,7 +19,7 @@ class UserController extends Controller
     public function getAllUser()
     {
         try {
-            $users = User::with( ['categorieUser', 'direction', 'role'])
+            $users = User::with( ['categorieUser', 'entite', 'role'])
                 ->where('statut', 1)
                 ->orderByDesc('created_at')
                 ->get();
@@ -38,13 +40,34 @@ class UserController extends Controller
         }
     }
 
+
+    public function getAllUserRole()
+    {
+        try {
+            $roles = Role::all(); 
+            return response()->json([
+                'data' => $roles,
+                'message' => '',
+                'status' => 200
+            ]);
+        } catch (Exception $ex) {
+            Log::error('Erreur getAllUser : ' . $ex->getMessage());
+
+            return response()->json([
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue.',
+                'status' => 500
+            ]);
+        }
+    }
+
     /**
      * 2. Récupération d’un utilisateur par son identifiant
      */
     public function getUserById($userId)
     {
         try {
-            $user = User::with(['categorieUser', 'direction', 'role'])->find($userId);
+            $user = User::with(['categorieUser', 'entite', 'role'])->find($userId);
 
             if (!$user) {
                 return response()->json([
@@ -66,6 +89,60 @@ class UserController extends Controller
                 'message' => 'Une erreur interne est survenue.',
                 'status' => 500
             ]);
+        }
+    }
+
+
+    /**
+     * Ajout d'un nouveau utilisateur 
+     */
+
+    public function saveUser(Request $request){
+        $validator = Validator::make($request->all(), [
+            'nom' => 'required|string',
+            'prenom' => 'required|string',
+            'role_id' => 'required',
+            'entite_id' => 'required',
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+        ]);
+
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'validation_error',
+                'message' => $validator->errors(),
+                'status' => 422
+            ]);
+        }
+
+        try {
+
+            $user = User::create([
+            'nom' => $request->nom,
+            'prenom' => $request->prenom,
+            'role_id' => (int)$request->role_id,
+            'entite_id' => (int)$request->entite_id,
+            'email' => $request->email,
+            'tel' => $request->tel,
+            'categorie_user_id' => 1,
+            'statut' => 1,
+            'password' => Hash::make($request->password), 
+           ]);
+
+
+          return response()->json([
+                'message' => 'Utilisateur ajouter avec succès',
+                'status' => 200
+            ]);
+           
+        } catch (Exception $ex) {
+
+            return response()->json([
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue.',
+                'status' => 500
+            ]);
+          
         }
     }
 
@@ -178,7 +255,7 @@ class UserController extends Controller
         }
 
         try {
-            $user = User::with(['role', 'demandeVehicule', 'direction', 'categorieUser'])
+            $user = User::with(['role', 'demandeVehicules', 'direction', 'categorieUser'])
                 ->where('email', $request->input('email'))
                 ->first();
 
@@ -205,3 +282,4 @@ class UserController extends Controller
         }
     }
 }
+ 

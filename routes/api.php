@@ -1,21 +1,22 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\VehiculeController;
-use App\Http\Controllers\ChauffeurController;
 use App\Http\Controllers\API\DashboardController;
-use App\Http\Controllers\MotifController;
-use App\Http\Controllers\DemandeCourseController;
-use App\Http\Controllers\PlanningGardeController;
-use App\Http\Controllers\NoteController;
+use App\Http\Controllers\API\EntiteController;
+use App\Http\Controllers\Api\GeoLocalisationController;
+use App\Http\Controllers\API\PasswordResetController;
+use App\Http\Controllers\API\StatistiqueController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChauffeurController;
 use App\Http\Controllers\CritereDeNotationController;
+use App\Http\Controllers\DemandeCourseController;
 use App\Http\Controllers\HistoriqueController;
 use App\Http\Controllers\JournalSmsController;
-use App\Http\Controllers\API\StatistiqueController;
-use App\Http\Controllers\API\PasswordResetController;
-use App\Http\Controllers\API\EntiteController;
+use App\Http\Controllers\MotifController;
+use App\Http\Controllers\NoteController;
+use App\Http\Controllers\PlanningGardeController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\VehiculeController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,7 +30,9 @@ use App\Http\Controllers\API\EntiteController;
 /**
  * Authentification
  */
-Route::post('/login', [AuthController::class, 'login']);
+
+Route::post('/login', [AuthController::class, 'login'])->name('login');
+
 
 /**
  * Réinitialisation mot de passe
@@ -43,6 +46,8 @@ Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::prefix('user')->group(function () {
     Route::post('load-by-email', [UserController::class, 'loadUserByEmail']);
 });
+
+
 
 /**
  * Routes protégées par auth:api
@@ -60,14 +65,16 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('user')->group(function () {
         Route::get('all', [UserController::class, 'getAllUser']);
         Route::get('get/{userId}', [UserController::class, 'getUserById']);
+        Route::post('save', [UserController::class, 'saveUser']);
         Route::post('update', [UserController::class, 'updateUser']);
         Route::post('delete', [UserController::class, 'deleteUser']);
+        Route::get('role_all', [UserController::class, 'getAllUserRole']);
     });
 
     /**
      * Véhicules
      */
-    Route::prefix('vehicule')->group(function () {
+    Route::prefix('vehicule')->group(function () { 
         Route::get('type', [VehiculeController::class, 'getTypesVehicules']);
         Route::post('save-type', [VehiculeController::class, 'saveTypeVehicule']);
         Route::get('categorie-permis', [VehiculeController::class, 'getCategoriePermis']);
@@ -87,6 +94,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('save', [ChauffeurController::class, 'saveChauffeur']);
         Route::get('get/{chauffeurId}', [ChauffeurController::class, 'getChauffeurById']);
         Route::post('update-disponibilite/{chauffeurId}', [ChauffeurController::class, 'updateDisponibilite']);
+        Route::get('list-agents', [ChauffeurController::class, 'getAgents']);
     });
 
     /**
@@ -94,21 +102,33 @@ Route::middleware('auth:api')->group(function () {
      */
     Route::prefix('demande')->group(function () {
         Route::post('save', [DemandeCourseController::class, 'saveDemande']);
-        Route::get('list/{user_id}/{role}', [DemandeCourseController::class, 'listDemandeVehicule']);
+        Route::get('list/{user_id}/{role}', [DemandeCourseController::class, 'listDemandeVehicule']); 
         Route::get('get/{demandeId}', [DemandeCourseController::class, 'getDemandeCourseById']);
         Route::post('edit', [DemandeCourseController::class, 'editDemande']);
         Route::post('delete', [DemandeCourseController::class, 'deleteDemandeCourse']);
         Route::get('en-cours/{user_id}/{role}', [DemandeCourseController::class, 'getDemandeCourseEnCour']);
         Route::post('filtrer-en-cours', [DemandeCourseController::class, 'getDemandeCourseEnCourFiltrer']);
+        Route::get('motif', [DemandeCourseController::class, 'getMotif']);
+        Route::post('motif_save', [DemandeCourseController::class, 'saveMotif']);
+
+        Route::post('demarrer/{demandeId}', [DemandeCourseController::class, 'demmarerCourse']);
+        Route::post('arreter/{demandeId}', [DemandeCourseController::class, 'arreterCourse']);
+        Route::get('get_geo/{demandeId}', [GeoLocalisationController::class, 'show']);
+        Route::post('geo_intermediaire_coord/{demandeId}', [GeoLocalisationController::class, 'saveIntermediaireLocationCource']);
+
+    /*
+        Route::get('demarrer/{demandeId}', [DemandeCourseController::class, 'demmarerCourse']);
+        Route::get('arreter/{demandeId}', [DemandeCourseController::class, 'arreterCourse']);
+    */
     });
 
     /**
      * Affectations
      */
-    Route::prefix('affectation')->group(function () {
+    Route::prefix('affectation')->group(function () {   
         Route::get('list', [DemandeCourseController::class, 'getDemandeAffecte']);
         Route::get('attributs/{typeVehiculeId}/{demande_id}', [DemandeCourseController::class, 'getAttributaffecterDemande']);
-        Route::post('save', [DemandeCourseController::class, 'affecterDemande']);
+        Route::post('save', [DemandeCourseController::class, 'affecterDemande']); 
         Route::post('update', [DemandeCourseController::class, 'updateAffectation']);
     });
 
@@ -137,17 +157,18 @@ Route::middleware('auth:api')->group(function () {
      */
     Route::prefix('historiques')->group(function () {
         Route::get('directions', [HistoriqueController::class, 'getDirections']);
-        Route::post('demandes', [HistoriqueController::class, 'getHistoriquesDemandes']);
+        Route::post('demandes', [HistoriqueController::class, 'getHistoriquesDemandes']); 
         Route::post('chauffeurs', [HistoriqueController::class, 'getHistoriquesChaufeurs']);
         Route::post('export-chauffeurs', [HistoriqueController::class, 'exportPerformancesChauffeur']);
         Route::post('export-demandes', [HistoriqueController::class, 'exportHistoriqueDemandesCourses']);
+        Route::post('export-demandes-pdf', [HistoriqueController::class, 'exportHistoriqueDemandesCoursePdf']);
     });
 
     /**
      * Journal SMS
      */
     Route::prefix('journal-sms')->group(function () {
-        Route::get('list', [JournalSmsController::class, 'getAllSMS']);
+        Route::get('list', [JournalSmsController::class, 'getAllSMS']); 
         Route::post('search', [JournalSmsController::class, 'searchSMS']);
     });
 

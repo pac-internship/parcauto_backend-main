@@ -3,42 +3,88 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DemandeVehiculeRequest;
-use App\Services\DateService;
-use App\Services\MoovApiService;
-use App\Services\DemandeCourseService;
-use App\Services\OccupationService;
-use App\Mail\NewDemandeMail;
 use App\Mail\DemandeNonNoteMail;
-use App\Mail\NotificationChauffeurMail;
+use App\Mail\NewDemandeMail;
 use App\Mail\NewDemandeMailAdmin;
-use Exception;
-use Carbon\Carbon;
-use App\Models\Vehicule;
-use App\Models\User;
-use Illuminate\Support\Facades\Mail;
-use App\Models\Chauffeur;
-use App\Models\JournalSms;
-use Illuminate\Http\Request;
-use App\Models\DemandeVehicule;
-
+use App\Mail\NotificationChauffeurMail;
 use App\Models\AffectationDemande;
+use App\Models\Chauffeur;
+use App\Models\Conduire;
+use App\Models\DemandeVehicule;
+use App\Models\GeoLocalisation;
+use App\Models\JournalSms;
+use App\Models\Motif;
 use App\Models\TypeVehicule;
+use App\Models\User;
+use App\Models\Vehicule;
+use App\Services\DateService;
+use App\Services\DemandeCourseService;
+use App\Services\GeoLocalisationService;
+use App\Services\MoovApiService;
+use App\Services\OccupationService;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 use function PHPUnit\Framework\isEmpty;
 
 class DemandeCourseController extends Controller
 {
-    //
-    public function saveDemande(DemandeVehiculeRequest $request){
+
+    public function getMotif(){
+         try{
+            $data = Motif::where('statut', true)->get();
+            return response()->json([
+                'data' => $data,
+                'success' => 'success',
+                'status' => 200
+            ]);
+
+        }catch(Exception $ex){
+            Log::error($ex->getMessage());
+            return response()->json([
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue',
+                'status' => 500
+            ]);
+        }
+    }
+
+    public function saveMotif(Request $request){
+      //$input = $request->input('body');
+       $input = $request->all();
         try{
+            $motifs = $this->checkExistingMotif($input['libelle']);
+            if($motifs) $motifs->update($input);
+            else  Motif::create($input);
+            return response()->json([
+                'success' => 'success',
+                'message' => 'Enregistrement terminé avec succès.',
+                'status' => 200
+            ]);
+        }catch(Exception $ex){
+            Log::info($ex);
+            return response()->json([
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue. Veuillez vérifier les champs.',
+                'status' => 500
+            ]);
+        }
+    }
+
+
+   // public function saveDemande(DemandeVehiculeRequest $request){
+   public function saveDemande(Request $request){ 
+       try{
             $user_id = $request->input('user_id');
             $beneficiaire_id = $request->input('beneficiaire_id');
             $point_depart = $request->input('point_depart');
             $point_destination = $request->input('point_destination');
-            $type_vehicule = $request->input('type_vehicule');
+            $type_vehicule = $request->input('type_vehicule_id');
             $motif = $request->input('motif');
             $nbre_personnes = $request->input('nbre_personnes');
             $escales = $request->input('escales');
@@ -61,9 +107,9 @@ class DemandeCourseController extends Controller
                 'statut' => env('STATUT_DEMANDE_COURSE_CREEE'),
                 'date_depart' => DateService::addTimeToDate($date_depart, $heure_depart),
                 'date_retour' => DateService::addTimeToDate($date_retour, $heure_retour),
-                'heure_depart' => $heure_depart,
-                'heure_retour' => $heure_retour,
-                'date'=>$date,
+                //'heure_depart' => $heure_depart,
+                //'heure_retour' => $heure_retour,
+                //'date'=>$date,
             ])->id;
 
             if($demande){
@@ -84,6 +130,7 @@ class DemandeCourseController extends Controller
 
                         $emails_admin = $admin->pluck('email')->toArray();
 
+                        /*
                         //envoi de mail à tous les administrateurs
                         Mail::send('emails.new_demande_admin', [
                                     'nom' => $user->nom,
@@ -94,8 +141,15 @@ class DemandeCourseController extends Controller
                             $message->to($emails_admin)->subject(env('APP_NAME') . " [ Demande de course créée] ");
                         });
 
+                        */
+
+                    if($demande_new->beneficiaire){
                         $message=''.env('MOOV_MESSAGE_HEADER')." ".$demande_new->beneficiaire->nom." ".$demande_new->beneficiaire->prenom." ".env('MOOV_MESSAGE_DEMANDE_COURSE').env('APP_NAME').'';
-                        $jsonResponse = MoovApiService::sendSms($demande_new->beneficiaire->tel,$message,$demande_new->beneficiaire_id);
+                       
+                        $moov = new MoovApiService();
+                        $jsonResponse = $moov->sendSms($demande_new->beneficiaire->tel,$message,$demande_new->beneficiaire_id);
+                        
+                        $jsonResponse  = $jsonResponse != "ENVOIYE" ? 'CREE' : $jsonResponse;
                         $journalSms = new JournalSms();
                         $journalSms->contact = $demande_new->beneficiaire->tel;
                         $journalSms->contenu = $message;
@@ -107,8 +161,10 @@ class DemandeCourseController extends Controller
 
                         foreach($admin->get() as $administrateur){
                             $message=''.env('MOOV_MESSAGE_HEADER')." ".$administrateur->nom." ".$administrateur->prenom." ".env('MOOV_MESSAGE_DEMANDE_COURSE_ADMIN_DEBUT')."Monsieur ".$demande_new->beneficiaire->nom." ".$demande_new->beneficiaire->prenom.env('MOOV_MESSAGE_DEMANDE_COURSE_ADMIN_FIN').env('APP_NAME').'';
-                            $jsonResponse = MoovApiService::sendSms($administrateur->tel,$message,$administrateur->id);
-
+                            $moov = new MoovApiService();
+                            $jsonResponse = $moov->sendSms($administrateur->tel,$message,$administrateur->id);
+                          
+                            $jsonResponse  = $jsonResponse != "ENVOIYE" ? 'CREE' : $jsonResponse;
                             $journalSms = new JournalSms();
                             $journalSms->contact = $administrateur->tel;
                             $journalSms->contenu = $message;
@@ -119,6 +175,7 @@ class DemandeCourseController extends Controller
 
                             //JournalSms::create($jsonResponse->toArray());
                         }
+                     }
 
 
                     }
@@ -129,7 +186,6 @@ class DemandeCourseController extends Controller
                 'message' => 'Demande de courses créée avec succès',
                 'status' => 200
             ],200);
-
         }catch(Exception $ex){
             Log::error($ex->getMessage());
 
@@ -139,7 +195,6 @@ class DemandeCourseController extends Controller
                 'status' => 500
             ], 500);
         }
-
     }
 
     public function verifierNotation($user_id){
@@ -164,30 +219,34 @@ class DemandeCourseController extends Controller
         }
     }
 
-    public function editDemande(DemandeVehiculeRequest $request){
+ //   public function editDemande(DemandeVehiculeRequest $request){
+  public function editDemande(Request $request){
         try{
+            $date_depart = $request->input('date_depart');
+            $date_retour = $request->input('date_retour');
+            $heure_depart = $request->input('heure_depart');
+            $heure_retour = $request->input('heure_retour');
             DemandeVehicule::where('id', $request->input('demande_id'))
                     ->update([
                         'point_depart' => $request->input('point_depart'),
                         'point_destination' => $request->input('point_destination'),
                         'nbre_personnes' => $request->input('nbre_personnes'),
                         'objet' => $request->input('objet'),
-                        'type_vehicule_id' => $request->input('type_vehicule'),
+                        'type_vehicule_id' => $request->input('type_vehicule_id'),
                         'motif_id' => $request->input('motif'),
                         'beneficiaire_id' => $request->input('beneficiaire_id'),
                         'escales' => $request->input('escales'),
-                        'date_depart' => DateService::addTimeToDate($request->input('date_depart'), $request->input('heure_depart')),
-                        'heure_depart' => $request->input('heure_depart'),
+                        'date_depart' => DateService::addTimeToDate($date_depart, $heure_depart),
+                        'date_retour' => DateService::addTimeToDate($date_retour, $heure_retour),
+                        //'heure_depart' => $request->input('heure_depart'),
                     ]);
 
             return response()->json([
                 'success' => "success",
                 'status' => 200
             ], 200);
-
         }catch(Exception $ex){
             Log::error($ex->getMessage());
-
             return response()->json([
                 'error' => "error",
                 'message' => "Une erreur interne est survenue.",
@@ -200,17 +259,20 @@ class DemandeCourseController extends Controller
         try{
 
             $data = [];
-            if($role == env('ROLE_ADMIN')){
+            
+            if($role == env('ROLE_ADMIN') || $role == env('ROLE_GESTIONNAIRE')){ 
                 $data = DemandeVehicule::with('typeVehicule', 'motif', 'affectation','user','beneficiaire')
                 ->where('is_note','=',false)
                 ->orderBy('created_at', 'DESC')
                 ->get();
             }
             else{
+                $chauffeur = Chauffeur::where('user_id',$user_id)->first();
                 $data = DemandeVehicule::with('typeVehicule', 'motif', 'affectation','user','beneficiaire')
                 ->where('is_note','=',false)
                 ->where('user_id','=',$user_id)
                 ->orWhere('beneficiaire_id','=',$user_id)
+                ->orWhere('chauffeur_id','=',$chauffeur?->id)
                 ->orderBy('created_at', 'DESC')
                 ->get();
             }
@@ -243,17 +305,19 @@ class DemandeCourseController extends Controller
 
             $demandeVehicules = [];
 
-            if($request->input('role') == env('ROLE_ADMIN')){
+            if($request->input('role') == env('ROLE_ADMIN') || $request->input('role') == env('ROLE_GESTIONNAIRE')){
                 $demandeVehicules=DemandeVehicule::with('typeVehicule', 'motif', 'affectation','user','beneficiaire')->whereBetween('created_at',[$debut,$fin])
                 ->where('is_note','=',0)
                 ->orderBy('created_at', 'DESC')
                 ->get();
             }
             else{
+                $chauffeur = Chauffeur::where('user_id',$user_id)->first();
                 $demandeVehicules=DemandeVehicule::with('typeVehicule', 'motif', 'affectation','user','beneficiaire')->whereBetween('created_at',[$debut,$fin])
                 ->where('is_note','=',0)
                 ->where('user_id','=',$user_id)
                 ->orWhere('beneficiaire_id','=',$user_id)
+                ->orWhere('chauffeur_id','=',$chauffeur?->id)
                 ->orderBy('created_at', 'DESC')
                 ->get();
             }
@@ -284,15 +348,17 @@ class DemandeCourseController extends Controller
 
             $data = [];
 
-            if($role == env('ROLE_ADMIN')){
+            if($role == env('ROLE_ADMIN') || $role == env('ROLE_GESTIONNAIRE')){
                 $data = DemandeVehicule::with('typeVehicule', 'motif', 'affectation','user','beneficiaire')
                 ->orderBy('created_at', 'DESC')
                 ->get();
             }
             else{
+                $chauffeur = Chauffeur::where('user_id',$user_id)->first();
                 $data = DemandeVehicule::with('typeVehicule', 'motif', 'affectation','user','beneficiaire')
                 ->where('user_id','=',$user_id)
                 ->orWhere('beneficiaire_id','=',$user_id)
+                ->orWhere('chauffeur_id','=',$chauffeur?->id)
                 ->orderBy('created_at', 'DESC')
                 ->get();
             }
@@ -325,7 +391,7 @@ class DemandeCourseController extends Controller
 
             $demandeVehicules = [];
 
-            if($request->input('role') == env('ROLE_ADMIN')){
+            if($request->input('role') == env('ROLE_ADMIN') || $request->input('role') == env('ROLE_GESTIONNAIRE')){
                 $demandeVehicules=DemandeVehicule::with('typeVehicule', 'motif', 'affectation','beneficiaire')
                 ->whereBetween('created_at',[$debut,$fin])
                 ->orderBy('created_at', 'DESC')
@@ -429,6 +495,8 @@ class DemandeCourseController extends Controller
      * @param $demande_id
      * @return \Illuminate\Http\JsonResponse
      */
+
+    /*
     public function getAttributaffecterDemande($typeVehiculeId,$demande_id){
         try{
 
@@ -439,16 +507,18 @@ class DemandeCourseController extends Controller
             //)->with('user')->get();
 
             $vehicules = Vehicule::where('type_vehicule_id', $typeVehiculeId)
-                ->where('disponibilite','=', env('STATUT_DISPONIBLE'))
+                ->where('disponibilite','=', env('STATUT_DISPONIBLE')) 
                 ->where('statut','=', 1)
                 ->get();
+
             $chauffeurs = Chauffeur::with('user')
                 ->where('disponibilite','=', env('STATUT_DISPONIBLE'))
                 ->where('statut','=', 1)
                 ->get();
+
                 // Log::debug($chauffeurs);
             return response()->json([
-                'data' => array([
+                'data' => array([ 
                     'vehicules' => $vehicules,
                     'chauffeurs' => $chauffeurs
                 ]),
@@ -467,9 +537,57 @@ class DemandeCourseController extends Controller
         }
     }
 
-    public function verifiedChauffeurAffectation($chauffeurId, $demandeId){
+    */
 
-  try{
+    public function getAttributAffecterDemande($typeVehiculeId, $demande_id){
+      try {
+        $vehicules = Vehicule::where('type_vehicule_id', $typeVehiculeId)
+            ->where('disponibilite', env('STATUT_DISPONIBLE'))
+            ->where('statut', 1)
+            ->get();
+
+        $permisIds = Conduire::whereIn('vehicule_id', $vehicules->pluck('id'))
+            ->pluck('categorie_permis_id')
+            ->unique();
+
+        $chauffeurs = Chauffeur::with('user')
+            ->where('disponibilite', env('STATUT_DISPONIBLE'))
+            ->where('statut', 1)
+          //->whereIn('categorie_permis_id', $permisIds)
+            ->get()
+            ->map(function ($chauffeur) {
+
+                $chauffeur->score = $this->calculerScoreChauffeur($chauffeur);
+
+                return $chauffeur;
+            })
+            ->sortByDesc('score')
+            ->values();
+
+        return response()->json([
+           'data' => array([ 
+                'vehicules' => $vehicules,
+                'chauffeurs' => $chauffeurs
+            ]),
+            'success' => true,
+            'message' => '',
+            'status' => 200
+        ], 200);
+
+        } catch (\Exception $ex) {
+
+          \Log::error($ex->getMessage());
+
+        return response()->json([
+            'error' => true,
+            'message' => "Une erreur interne est survenue.",
+            'status' => 500
+        ], 500);
+       }
+   }
+
+    public function verifiedChauffeurAffectation($chauffeurId, $demandeId){
+     try{
 
             $demande = DemandeVehicule::where('id', $demandeId)->first();
 
@@ -570,7 +688,7 @@ class DemandeCourseController extends Controller
         }
     }
 
-    public function affecterDemande(Request $request, $response=0){
+    public function affecterDemande(Request $request, $response=0){ 
         try{
             $demande_id = $request->input('demande_id');
             $vehicule = $request->input('vehicule_id');
@@ -608,28 +726,43 @@ class DemandeCourseController extends Controller
                 'chauffeur_id' => $chauffeur,
             ]);
 
-            $demande->statut = env('STATUT_DEMANDE_COURSE_AFFECTEE');
+            $demande->statut = env('STATUT_DEMANDE_COURSE_AFFECTEE'); 
+            $demande->vehicule_id = $vehicule;
+            $demande->chauffeur_id = $chauffeur;
             $demande->save();
+
             // save new occupation
-            OccupationService::saveOccupation($affectation, $demande->date_depart, $demande->date_retour);
+            OccupationService::saveOccupation($affectation, $demande->date_depart, $demande->date_retour);  
 
             $chauffeur_affecter = Chauffeur::with('user')
             ->where('id',$chauffeur)->first();
+            if($chauffeur_affecter){
+                $chauffeur_affecter->disponibilite = env('STATUT_COURSE');
+                $chauffeur_affecter->save();
+            }
+          
             $vehicule_affecter = Vehicule::with('type')
             ->where('id',$vehicule)->first();
+            if($vehicule_affecter){
+              $vehicule_affecter->disponibilite = env('STATUT_COURSE');
+              $vehicule_affecter->save();
+            }
+
             $mailable = new NotificationChauffeurMail($chauffeur_affecter,$demande,$vehicule_affecter);
             Mail::to($demande->user->email)->send($mailable);
             Log::debug($chauffeur_affecter);
+
             //envoi de sms au demandeur de course
             $message=''.env('MOOV_MESSAGE_HEADER')." ".$demande->beneficiaire->nom." ".$demande->beneficiaire->prenom." ".env('MOOV_MESSAGE_AFFECTATION_DEMANDEUR_DEBUT').$chauffeur_affecter->user->nom." ".$chauffeur_affecter->user->prenom." tel: ".$chauffeur_affecter->user->tel." ".env('MOOV_MESSAGE_AFFECTATION_DEMANDEUR_FIN').$vehicule_affecter->marque."-".$vehicule_affecter->immatr.'';
-            $jsonResponse = MoovApiService::sendSms($demande->beneficiaire->tel,$message,$demande->beneficiaire_id);
+            $moov = new MoovApiService();
+            $jsonResponse =  $moov->sendSms($demande->beneficiaire->tel,$message,$demande->beneficiaire_id);
 
             $journalSms = new JournalSms();
             $journalSms->contact = $demande->beneficiaire->tel;
             $journalSms->contenu = $message;
             $journalSms->status_envoi = $jsonResponse;
             $journalSms->date_envoi = Carbon::now();
-            $journalSms->user_id = $demande->beneficiaire_id;
+            $journalSms->user_id = $demande->beneficiaire_id; 
             $journalSms->save();
 
             //envoi de sms au chauffeur
@@ -641,7 +774,9 @@ class DemandeCourseController extends Controller
             $point_depart_course = "Point de départ: ".$demande->point_depart."\n";
             $date_heure_depart = "Date et heure de départ: ".$date_format;
             $message_chauffeur = $message_debut.$demande_nom.$num_tel.$vehicule_course.$point_depart_course.$date_heure_depart;
-            $jsonResponse = MoovApiService::sendSms($chauffeur_affecter->user->tel,$message_chauffeur,$chauffeur_affecter->user_id);
+
+            $moov = new \App\Services\MoovApiService();
+            $jsonResponse =  $moov->sendSms($chauffeur_affecter->user->tel,$message_chauffeur,$chauffeur_affecter->user_id);
 
             $journalSms = new JournalSms();
             $journalSms->contact = $chauffeur_affecter->user->tel;
@@ -692,44 +827,50 @@ class DemandeCourseController extends Controller
     }
 
 
-    public function demmarerCourse($demande_course_id){
-        try{
-            $data =  DemandeVehicule::where('id', $demande_course_id)->first();
+   public function demmarerCourse(Request $request, $demande_course_id, GeoLocalisationService $geoService){
+       try{
+            $data = DemandeVehicule::where('id', $demande_course_id)->first();
 
-            if($data->statut !=env('STATUT_DEMANDE_COURSE_AFFECTEE'))
-            {
-                return response()->json( [
-                    'error'=>"error",
-                    'message' => "Ressource non autorisée",
+           if(!$data || $data->statut != env('STATUT_DEMANDE_COURSE_AFFECTEE')){
+               return response()->json([
+                   'error' => "error",
+                   'message' => "Ressource non autorisée",
                     'status' => 401
-                ]);
+               ]);
             }
 
             $data->statut = env('STATUT_DEMANDE_COURSE_DEMARREE');
-            $date =Carbon::now()->format("Y-m-d H:i:s");
+            $date = now();
             $data->date_depart_effectif = $date;
             $data->save();
-            return response()->json([
+
+           if($request->has(['latitude', 'longitude'])) {
+                   $geoService->start(
+                   $data->id,
+                   $request->latitude,
+                   $request->longitude
+                );
+            }
+
+             return response()->json([
                 'data' => $data,
                 'success' => 'success',
-                'message' => '',
+                'message' => 'Course démarrée avec géolocalisation',
                 'status' => 200
             ], 200);
 
-        }catch(Exception $ex){
-            Log::error($ex->getMessage());
+        }catch(Exception $ex){ 
+         Log::error($ex->getMessage());
 
-            return response()->json([
-                'error' => "error",
-                'message' => "Une erreur interne est survenue.",
-                'status'  => 500
-            ], 500);
-        }
-
-
+        return response()->json([
+            'error' => "error",
+            'message' => "Une erreur interne est survenue.",
+            'status'  => 500
+        ], 500);
+      }
     }
 
-    public function arreterCourse($demande_course_id){
+    public function arreterCourse(Request $request, $demande_course_id, GeoLocalisationService $geoService){
         try{
             $data =  DemandeVehicule::with('user','motif','beneficiaire')
             ->where('id', $demande_course_id)->first();
@@ -747,6 +888,30 @@ class DemandeCourseController extends Controller
             $date =Carbon::now()->format("Y-m-d H:i:s");
             $data->date_retour_effectif = $date;
             $data->save();
+
+            $chauffeur_affecter = Chauffeur::with('user')
+            ->where('id',$data->chauffeur_id)->first();
+            if($chauffeur_affecter){
+                $chauffeur_affecter->disponibilite = env('STATUT_DISPONIBLE');
+                $chauffeur_affecter->save();
+            }
+          
+            $vehicule_affecter = Vehicule::with('type')
+            ->where('id',$data->vehicule_id)->first();
+            if($vehicule_affecter){
+              $vehicule_affecter->disponibilite = env('STATUT_DISPONIBLE');
+              $vehicule_affecter->save();
+            }
+
+             if($request->has(['latitude', 'longitude'])) {
+                   $geoService->end( 
+                   $data->id,
+                   $request->latitude,
+                   $request->longitude
+                );
+            }
+
+
             // delete old occupation
             OccupationService::deleteOldOccupation($data);
 
@@ -757,9 +922,10 @@ class DemandeCourseController extends Controller
             })->get();
 
 
-            foreach($admin as $administrateur){
+            foreach($admin as $administrateur){ 
                 $message=''.env('MOOV_MESSAGE_HEADER')." ".$administrateur->nom." ".$administrateur->prenom." ".env('MOOV_MESSAGE_DEMANDE_COURSE_TERMINEE_DEBUT').$data->user->nom." ".$data->user->prenom." ".env('MOOV_MESSAGE_DEMANDE_COURSE_TERMINEE_FIN').'';
-                $jsonResponse = MoovApiService::sendSms($administrateur->tel,$message,$administrateur->id);
+                $moov = new MoovApiService();
+                $jsonResponse =  $moov->sendSms($administrateur->tel,$message,$administrateur->id);
 
                 $journalSms = new JournalSms();
                 $journalSms->contact = $administrateur->tel;
@@ -774,11 +940,13 @@ class DemandeCourseController extends Controller
 
             // message sms au demandeur de course
             $message=''.env('MOOV_MESSAGE_HEADER')." ".$data->user->nom." ".$data->user->prenom." ".env('MOOV_MESSAGE_DEMANDE_COURSE_DEMANDEUR_TERMINEE')." ";
-            $jsonResponse = MoovApiService::sendSms($data->user->tel,$message,$data->user_id);
+            $moov = new MoovApiService();
+            $jsonResponse = $moov->sendSms($data->user->tel,$message,$data->user_id);
+
             $journalSms = new JournalSms();
             $journalSms->contact = $data->user->tel;
             $journalSms->contenu = $message;
-            $journalSms->status_envoi = $jsonResponse;
+            $journalSms->status_envoi = $jsonResponse; 
             $journalSms->date_envoi = Carbon::now();
             $journalSms->user_id = $data->user_id;
             $journalSms->save();
@@ -806,16 +974,42 @@ class DemandeCourseController extends Controller
 
 
     public function updateAffectation(Request $request){
+
         try{
             $demande = $request->input('demande_id');
             $vehicule = $request->input('vehicule_id');
             $chauffeur = $request->input('chauffeur_id');
             $affectation = AffectationDemande::where('demande_vehicule_id',$demande)->first();
 
+
+
             if($affectation != null){
                 $affectation->vehicule_id = $vehicule;
                 $affectation->chauffeur_id = $chauffeur;
                 $affectation->save();
+
+                $demande = DemandeVehicule::with('user','motif','beneficiaire')->where('id','=',$demande)->first();
+
+                $demande->statut = env('STATUT_DEMANDE_COURSE_AFFECTEE'); 
+                $demande->vehicule_id = $vehicule;
+                $demande->chauffeur_id = $chauffeur;
+                $demande->save();
+
+             // save new occupation
+                OccupationService::saveOccupation($affectation, $demande->date_depart, $demande->date_retour);  
+                $this->desafectPrevChaufeurVehicule($chauffeur, $vehicule);
+               $chauffeur_affecter = Chauffeur::with('user')->where('id',$chauffeur)->first();
+               if($chauffeur_affecter){
+                   $chauffeur_affecter->disponibilite = env('STATUT_COURSE');
+                   $chauffeur_affecter->save();
+                }
+          
+                $vehicule_affecter = Vehicule::with('type')->where('id',$vehicule)->first();
+                if($vehicule_affecter){
+                    $vehicule_affecter->disponibilite = env('STATUT_COURSE');
+                    $vehicule_affecter->save();
+                }
+
 
                 return response()->json([
                     'success' => 'success',
@@ -833,5 +1027,76 @@ class DemandeCourseController extends Controller
             ], 500);
         }
     }
+
+    private function desafectPrevChaufeurVehicule($chauffeur, $vehicule){
+        $chauffeur_affecter = Chauffeur::with('user')->where('id',$chauffeur)->first();
+               if($chauffeur_affecter){
+                   $chauffeur_affecter->disponibilite = env('STATUT_DISPONIBLE');
+                   $chauffeur_affecter->save();
+                }
+          
+        $vehicule_affecter = Vehicule::with('type')->where('id',$vehicule)->first();
+                if($vehicule_affecter){
+                    $vehicule_affecter->disponibilite = env('STATUT_DISPONIBLE');
+                    $vehicule_affecter->save();
+        }
+
+        return true;
+    }
+
+
+     public function checkExistingMotif($param){
+        try{
+            $data = Motif::where('libelle', $param)->first();
+            return $data;
+
+        }catch(Exception $ex){
+            Log::error($ex->getMessage());
+            return response()->json([
+                'error' => 'error',
+                'message' => 'Une erreur interne est survenue',
+                'status' => 500
+            ]);
+        }
+    }
+
+
+    private function calculerScoreChauffeur($chauffeur){
+
+    $score = 0;
+    $score += 50;
+
+    $nbCourses = DemandeVehicule::where('chauffeur_id', $chauffeur->id)
+        ->whereDate('created_at', today())
+        ->count();
+
+    $score += max(0, 20 - $nbCourses);
+
+    if ($chauffeur->annee_permis != null && preg_match('/^\d{4}$/', $chauffeur->annee_permis)) {
+        $anciennete = now()->year - (int)$chauffeur->annee_permis;
+        $score += $anciennete;
+    }
+
+    $kmJour = 0;
+
+    $coursesAujourdhui = DemandeVehicule::where('chauffeur_id', $chauffeur->id)
+        ->whereDate('created_at', today())
+        ->pluck('id');
+
+    $kmJour = GeoLocalisation::whereIn('demande_vehicule_id', $coursesAujourdhui)->whereDate('created_at', today())->sum('km_total');
+
+    $totalKmFlotte = GeoLocalisation::whereDate('created_at', today())->sum('km_total');
+
+    $ratio = $totalKmFlotte > 0 ? ($kmJour / $totalKmFlotte) : 0;
+
+    if ($ratio < 0.1) {
+          $score += 30;
+    } elseif ($ratio < 0.25) {
+         $score += 15;
+    } else {
+        $score -= 10;
+    }
+       return $score;
+   }
 
 }
